@@ -1,50 +1,70 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+SYNC IMPACT REPORT
+==================
+Version Change: Initial → 1.0.0 → 1.1.0 → 2.0.0 → 3.0.0 → 4.0.0 (MAJOR)
+Modified Principles:
+  - ADDED three new foundational principles (MAJOR change):
+    I. Pragmatic Simplicity (avoid over-engineering, justify complexity)
+    II. Maintainable Code (modularity, readability, refactorability)
+    VIII. Continuous Learning (document clarifications, integrate feedback)
+  - REORDERED principles by priority (simplicity and maintainability first)
+  - Previous principles renumbered: Performance → III, Hardware Abstraction → IV, etc.
+  - Updated governance with new priority order and learning integration note
+Added Sections: Learning Integration in governance
+Removed Sections: None
+Templates Requiring Updates:
+  - ✅ All templates already aligned
+Follow-up TODOs: None
+-->
+
+# BotiEyes Constitution
+
+This constitution defines the core architectural principles and governance for BotiEyes.
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Pragmatic Simplicity
+Every implementation must have a clear justification. Start with the simplest solution that works; add complexity only when necessary and documented. Avoid over-engineering—YAGNI (You Aren't Gonna Need It) is a core value.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Maintainable Code
+Code is written once but read many times. Prioritize modularity, human readability, and ease of refactoring over cleverness. Clear structure and naming enable future contributors to understand and evolve the codebase.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Performance-First Design
+Performance is a first-class concern. Smooth animations are essential to emotional expressiveness. Profile before optimizing; measure real bottlenecks.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Hardware Abstraction
+Core emotion and animation logic is independent of display hardware. Platform-specific code lives in adapters. This enables cross-platform development and PC emulation.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Emotion-Driven Design
+Expressions derive from a continuous valence-arousal emotional model, enabling smooth interpolation between states. This provides natural, coherent emotional expression.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+### VI. Cross-Platform Emulation
+PC-based emulation is a first-class development target for rapid iteration and accessibility. No hardware required to contribute.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### VII. Extensible Architecture
+The architecture supports extension without core modifications. Clear extension points for emotion models, rendering backends, and input processors.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### VIII. Continuous Learning
+User clarifications and feedback are valuable. Document insights, review against specifications, and integrate learnings into project memory for future consistency.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+**Principle Priority** (when principles conflict):
+1. Pragmatic Simplicity
+2. Maintainable Code
+3. Hardware Abstraction
+4. Performance-First
+5. Emotion-Driven
+6. Cross-Platform Emulation
+7. Extensible Architecture
+8. Continuous Learning
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Amendments**: Require 2/3 vote from active maintainers (commit access in past 90 days). Voting period: minimum 7 days.
+
+**Scope**: This constitution covers architectural principles and governance. Implementation details (metrics, procedures, tooling) are not constitutional.
+
+**Learning Integration**: Clarifications, insights, and design decisions are documented in project memory (`.specify/memory/`) and reviewed against specifications to ensure consistency across features.
+
+---
+
+**Version**: 4.0.0 | **Ratified**: 2026-04-16 | **Last Amended**: 2026-04-16

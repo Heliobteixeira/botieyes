@@ -61,9 +61,12 @@
   15. Position smoothing: setEyePosition() always interpolates over fixed 300ms
   16. Mapping customization: Formulas hardcoded (not customizable in v1)
   
+  **Round 4 (Q17)**: Implementation architecture
+  17. Library structure: Standalone C++ library (not sketch) for Arduino IDE; minimal dependencies (Adafruit GFX only); MVP prioritizes emulator PNG export for AI feedback
+  
   - Added FR-019 (display config), FR-020 (Pygame emulator), FR-021 (ErrorCode enum)
-  - Added FR-022 (init state), FR-023 (emotion/position independence)
-  - Updated FR-003 (transition duration parameter), FR-007 (API signatures with durations), FR-010 (position interpolation), FR-012 (animation interruption), FR-013 (5 primitives), FR-015 (serial errors), FR-016 (update frequency), FR-017 (mapping not customizable), FR-018 (static memory)
+  - Added FR-022 (init state), FR-023 (emotion/position independence), FR-024 (C++ library structure), FR-025 (minimal dependencies)
+  - Updated FR-003 (transition duration parameter), FR-004 (Adafruit GFX only), FR-005 (MVP emulator priority), FR-007 (API signatures with durations), FR-010 (position interpolation), FR-012 (animation interruption), FR-013 (5 primitives), FR-015 (serial errors), FR-016 (update frequency), FR-017 (mapping not customizable), FR-018 (static memory)
 
 **Strengths**:
 - **Complete emotion specification**: 10+ emotions with coordinates, mapping functions, and visual parameters

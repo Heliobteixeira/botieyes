@@ -179,6 +179,10 @@ AI systems dynamically control bot emotions through simple API calls or serial c
 - A: **Not customizable**: Mapping formulas (pupil_dilation, eyelid_openness, brow_angle) are hardcoded; developers use provided baseline
 - Rationale: Aligns with Pragmatic Simplicity; reduces API complexity; baseline formulas work across use cases; v1 scope control
 
+**Q17: Implementation Architecture (FR-004, FR-005)**
+- A: **Separate C++ library for Arduino IDE**: Standalone C++ library (not Arduino sketches) compiled by Arduino IDE; minimal dependencies (Adafruit GFX only); MVP approach prioritizes basic rendering + PNG export for AI feedback loop
+- Rationale: Reusable across projects; standard Arduino workflow; lean codebase; enables AI-driven iterative development from start
+
 ---
 
 ## Requirements *(mandatory)*
@@ -188,8 +192,8 @@ AI systems dynamically control bot emotions through simple API calls or serial c
 - **FR-001**: Library MUST accept valence in range [-0.5, 0.5] (negative=negative emotions, positive=positive emotions) and arousal in range [0.0, 1.0] (calm to excited)
 - **FR-002**: Library MUST map valence-arousal coordinates to eye animation parameters (pupil size, eyelid position, eye shape, brow angle)
 - **FR-003**: Library MUST support smooth interpolation between emotional states with per-call configurable transition duration (default: 400ms)
-- **FR-004**: Library MUST render animated eyes on OLED displays (I2C/SPI) using Adafruit GFX compatible drivers
-- **FR-005**: Library MUST provide PC emulator with graphical window displaying eyes and emotion control interface
+- **FR-004**: Library MUST render animated eyes on OLED displays (I2C/SPI) using Adafruit GFX as sole rendering dependency
+- **FR-005**: Library MUST provide PC emulator (Python + Pygame) with PNG export as highest priority feature for AI feedback; emulator must be functional in MVP before full Arduino implementation
 - **FR-006**: Library MUST support Arduino (Nano, Uno) and ESP32 platforms with appropriate resource constraints
 - **FR-007**: Library MUST expose API with ErrorCode returns: initialize(config) [sets default state to (0.0, 0.5)], setEmotion(valence, arousal, duration_ms=400), setEyePosition(leftH, leftV, rightH, rightV) [300ms interpolation], update() [called at target FPS], getCurrentEmotion(), getEyePosition(); emotion and position updates are independent and additive
 - **FR-008**: Emulator MUST provide captureFrame() returning PNG image viewable by multimodal AI
@@ -208,6 +212,8 @@ AI systems dynamically control bot emotions through simple API calls or serial c
 - **FR-021**: Library MUST define ErrorCode enum with values: OK, INVALID_INPUT, HARDWARE_ERROR, TIMEOUT, DISPLAY_NOT_FOUND, MEMORY_ERROR
 - **FR-022**: Library MUST initialize eyes to neutral expression (0.0, 0.5) immediately after successful initialize() call
 - **FR-023**: Library MUST apply emotion (expression parameters) and position (H/V angles) independently and simultaneously; changes to one do not reset the other
+- **FR-024**: Library MUST be structured as standalone C++ library compilable by Arduino IDE (not Arduino sketch); header (.h) and implementation (.cpp) files following Arduino library conventions
+- **FR-025**: Library MUST minimize dependencies: Adafruit GFX only for Arduino/ESP32; Python + Pygame only for emulator; no other external libraries
 
 ### Emotion Mapping Table
 
@@ -272,6 +278,9 @@ eye_squint = max(0, (0.5 - arousal) × 0.4) if valence < 0 else 0
 - **SC-011**: Eye shapes remain aesthetically pleasing on displays as small as 64x48 pixels per eye
 - **SC-012**: Independent eye movements (H/V) complete in 200-400ms with smooth interpolation
 - **SC-013**: Users identify gaze direction (left/right/up/down/converge/diverge) with >90% accuracy
+- **SC-014**: Library compiles successfully as Arduino library in Arduino IDE for Mega 2560 and ESP32 targets
+- **SC-015**: Library has zero dependencies beyond Adafruit GFX for embedded platforms
+- **SC-016**: MVP emulator demonstrates basic rendering with PNG export functional before Arduino implementation begins
 
 ## Assumptions
 
@@ -279,6 +288,9 @@ eye_squint = max(0, (0.5 - arousal) × 0.4) if valence < 0 else 0
 - **Configuration**: Manual display setup required (type, protocol, pins, resolution specified in initialize())
 - **Platform**: Arduino Mega 2560 minimum (8KB SRAM); ESP32 recommended; Nano not supported due to memory
 - **Developers**: Basic Arduino/C++ knowledge; AI-driven development primary workflow
+- **Architecture**: Standalone C++ library (not sketch); compiled by Arduino IDE; follows Arduino library conventions (.h/.cpp structure)
+- **Dependencies**: Minimal - Adafruit GFX only for embedded platforms; Python + Pygame for emulator
+- **MVP Priority**: PC emulator with PNG export implemented first to enable AI visual feedback loop before full Arduino feature set
 - **Emulator**: Python 3.8+ with Pygame for cross-platform compatibility (Windows/macOS/Linux); trivial PNG capture and AI integration
 - **Rendering**: 5 primitives per eye (outer ellipse, pupil, upper lid, lower lid, highlight) with anti-aliasing via dithering; Adafruit GFX foundation
 - **Animations**: Built-in only (blink, wink, roll with configurable parameters); no custom animation creation

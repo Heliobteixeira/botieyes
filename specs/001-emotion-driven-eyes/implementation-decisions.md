@@ -200,8 +200,74 @@ Before proceeding to `/speckit.tasks`:
 - [x] Update research.md (test coverage, memory footprint)
 - [x] Update plan.md (constitution check, complexity tracking)
 - [x] Update spec.md (FR requirements for helpers, remove roll/JSON requirements)
+- [x] Platform expert reviews (Arduino + ESP32 best practices, performance optimization)
+- [x] Update research.md with platform-specific optimizations
 
-**Status**: ✅ ALL ARTIFACTS UPDATED - Ready for `/speckit.tasks`
+**Status**: ✅ ALL ARTIFACTS UPDATED + PLATFORM REVIEWS COMPLETE - Ready for `/speckit.tasks`
+
+---
+
+## Platform Expert Reviews Summary (2026-04-17)
+
+Two specialized experts (Arduino and ESP32) reviewed the design for platform-specific best practices, performance optimization, and standard development patterns. Full reviews in [platform-reviews.md](./platform-reviews.md).
+
+### Arduino Platform - APPROVED ✅
+
+**Verdict**: Viable with ~900-1000B user code on Nano (PRIMARY), ~7KB on Mega
+
+**Critical Findings**:
+- ✅ I2C 400kHz is MANDATORY for 15+ FPS on Nano
+- ✅ Stack headroom should be 400-600B (not 300B optimistic estimate)
+- ✅ Realistic user code: ~900B after accounting for stack safety margin
+
+**Must-Implement Optimizations** (Phase 1):
+1. Cubic easing lookup table (PROGMEM) → 5-10ms savings per frame
+2. I2C 400kHz with auto-fallback → 30-40ms savings vs 100kHz
+3. Integer angle representation → 2-5ms savings per frame
+4. Dirty flag rendering → Skip 20-30ms when idle
+5. PROGMEM for const data → 50-100 bytes RAM savings
+
+**Best Practices**:
+- Use `const`/`constexpr`, PROGMEM, F() macro, avoid `String` class
+- Profile with `-Wstack-usage=400` flag
+- Document 600B minimum stack requirement
+
+**Alternative**: 128x32 display → 1500B user code (512B framebuffer savings)
+
+### ESP32 Platform - APPROVED ✅ (UNDERUTILIZED)
+
+**Verdict**: Fundamentally sound but treats ESP32 as "faster Arduino" - missing opportunities
+
+**Current**: 30 FPS (same I2C bottleneck)  
+**Achievable**: 60+ FPS with ESP32 optimizations
+
+**High-Impact Optimizations** (Phase 2):
+1. Dual-core rendering → 15-25 FPS gain, no manual `update()` calls
+2. I2C DMA transfers → 15ms → 2ms, enables 60+ FPS
+3. Expression caching (10KB) → Instant emotion switches, 80+ FPS
+4. BLE emotion control → 20-50ms AI latency (vs 200-500ms WiFi)
+5. Hardware SPI → 100+ FPS (vs I2C 400kHz)
+
+**ESP32 Killer Features**:
+- WiFi AP mode for field tuning
+- OTA updates for emotion mapping
+- JSON export re-enabled (520KB available)
+- Power management (light/deep sleep)
+
+**Recommended Actions**:
+- **v1**: Document I2C DMA, create ESP32 examples (dual-core, BLE)
+- **v1.1**: Implement dual-core behind `#ifdef ESP32_OPTIMIZATIONS`
+- **v2**: Expression caching, OTA support, power management
+
+### Performance Comparison
+
+| Platform | Current FPS | Optimized FPS | Key Optimization |
+|----------|-------------|---------------|------------------|
+| Arduino Nano | 15-20 | 20-25 | I2C 400kHz + LUT easing |
+| Arduino Mega | 20-25 | 25-30 | Same as Nano |
+| ESP32 | 30-60 | 60+ | Dual-core + DMA + caching |
+
+**Key Takeaway**: I2C 400kHz + lookup table easing critical for ALL platforms. ESP32 gains 4x from dual-core + DMA.
 
 ---
 

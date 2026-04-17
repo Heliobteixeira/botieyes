@@ -298,6 +298,204 @@ jobs:
 | **Visual Validation** | MockDisplay + Golden Checksums | Deterministic, fast, no hardware needed |
 | **CI/CD** | GitHub Actions (native tests + compilation) | Free, fast feedback, memory checks |
 | **Rendering Library** | Adafruit GFX | Broad compatibility, well-documented, sufficient performance |
+| **I2C Speed** | 400kHz (MANDATORY for Nano) | 3-4x speedup, enables 15+ FPS on Nano |
+| **Easing Implementation** | Lookup table (PROGMEM) | 5-10ms savings vs float calculations |
+| **Angle Storage** | Integer (degrees × 10) | Avoids float→int conversions |
+
+---
+
+## 6. Platform-Specific Optimizations
+
+**Updated**: 2026-04-17 (Post-Platform Expert Review)
+
+Two specialized platform experts (Arduino and ESP32) reviewed the design for best practices, performance optimization, and standard development patterns. Key findings consolidated below.
+
+### 6.1 Arduino Platform (Nano/Mega) - APPROVED ✅
+
+**Verdict**: Viable with tight memory budget (~1000B user code on Nano, ~7KB on Mega)
+
+**Critical Requirements**:
+- **I2C 400kHz is MANDATORY** for 15+ FPS on Nano (100kHz achieves only 14-19 FPS)
+- **Stack headroom should be 400-600B** (not 300B) - Adafruit GFX recursion can spike
+- **Realistic user code: ~900B on Nano** (not 1000B) after accounting for stack
+
+**High-Impact Optimizations** (MUST implement in Phase 1):
+
+1. **Cubic Easing Lookup Table** 🚀 **5-10ms per frame savings**
+   ```cpp
+   // Pre-computed ease-in-out-cubic (256 entries in PROGMEM)
+   const uint8_t CUBIC_EASING_LUT[256] PROGMEM = { /* ... */ };
+   uint8_t easedValue = pgm_read_byte(&EASING_LUT[input]);
+   ```
+   - **Impact**: 256 bytes Flash, 0 bytes RAM, eliminates `pow()` calls
+
+2. **I2C Fast Mode with Auto-Fallback**
+   ```cpp
+   Wire.setClock(400000L);  // CRITICAL for Nano
+   // Auto-fallback to 100kHz if display doesn't support 400kHz
+   ```
+   - **Impact**: 30-40ms frame time savings vs 100kHz
+
+3. **Integer Angle Representation** 🚀 **2-5ms per frame**
+   ```cpp
+   // Store as int16_t degrees × 10 (0.1° precision)
+   int16_t horizontalDeci;  // -900 to +900 (-90.0° to +90.0°)
+   ```
+   - **Impact**: Avoids float→int conversions in rendering
+
+4. **Dirty Flag Rendering** 🚀 **Skip 20-30ms when idle**
+   ```cpp
+   if (!isInterpolating && !isAnimating && !needsRedraw) {
+       return OK;  // Skip rendering
+   }
+   ```
+   - **Impact**: Reduces idle power, improves responsiveness
+
+5. **PROGMEM for Const Data**
+   ```cpp
+   const EmotionPreset EMOTIONS[10] PROGMEM = { /* ... */ };
+   ```
+   - **Impact**: Saves 50-100 bytes RAM
+
+**Arduino Best Practices** (MUST follow):
+- ✅ Use `const`/`constexpr` aggressively (0 bytes RAM)
+- ✅ PROGMEM for all lookup tables (Flash vs RAM)
+- ✅ F() macro for Serial strings (10-50 bytes per string)
+- ✅ Avoid `String` class - use `char[]` (no heap fragmentation)
+- ✅ Use `uint8_t`/`int16_t` instead of `int` (1-2 bytes per variable)
+- ✅ Minimize globals - prefer class members
+- ✅ Profile with `-Wstack-usage=400` flag
+
+**Critical Risks**:
+- 🔴 **Stack Overflow on Nano**: Document 600B minimum requirement
+- 🟡 **I2C Compatibility**: Cheap OLED modules may not support 400kHz
+- 🟡 **Float Performance**: AVR has no FPU (10-100x slower than int)
+
+**Alternative**: 128x32 display → saves 512B framebuffer → **1500B user code on Nano**
+
+---
+
+### 6.2 ESP32 Platform - APPROVED ✅ (UNDERUTILIZED)
+
+**Verdict**: Fundamentally sound but treats ESP32 as "faster Arduino" - missing opportunities
+
+**Current State**: 30 FPS (same I2C bottleneck as Arduino)  
+**Achievable**: **60+ FPS** with ESP32-specific optimizations
+
+**High-Impact Optimizations** (SHOULD implement in Phase 2):
+
+1. **Dual-Core Rendering** 🚀 **15-25 FPS gain**
+   ```cpp
+   // Pin rendering task to Core 1 (app core)
+   xTaskCreatePinnedToCore(renderTask, "BotiEyes_Render", 4096, this, 2, &handle, 1);
+   ```
+   - **Impact**: 
+     - User no longer needs manual `update()` calls
+     - WiFi activity doesn't interrupt rendering (separate cores)
+     - Consistent 60 FPS even during WiFi transfers
+
+2. **I2C DMA Transfers** 🚀 **10-20 FPS gain**
+   ```cpp
+   // Non-blocking I2C with DMA
+   i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(50));
+   // CPU free to prepare next frame (15ms → 2ms blocking time)
+   ```
+   - **Impact**: Reduces blocking time from 15ms → 2ms, enables 60+ FPS
+
+3. **Expression Caching** 💾 **520KB RAM advantage**
+   ```cpp
+   // Cache 400 emotion states in 10KB RAM
+   CachedExpression cache[400];
+   // Instant emotion switches (5-10ms rendering saved)
+   ```
+   - **Impact**: 80+ FPS with cached emotions, no recalculation
+
+4. **BLE Emotion Control** 🌐 **Low-latency AI integration**
+   ```cpp
+   // BLE GATT service for emotion control
+   // AI sends: [valence_float, arousal_float] = 8 bytes
+   ```
+   - **Impact**: 20-50ms AI→emotion latency (vs 200-500ms WiFi HTTP)
+
+5. **Hardware SPI over I2C** 🚀 **3-4x speedup**
+   ```cpp
+   // SPI supports 40MHz on ESP32 (vs I2C 400kHz)
+   // 100+ FPS possible with SPI-compatible displays
+   ```
+
+**ESP32 Killer Features**:
+- 🌐 **WiFi AP Mode**: Robot hosts WiFi → phone connects → real-time tuning
+- 🔄 **OTA Updates**: Update emotion mapping formulas over WiFi
+- 💤 **Power Management**: Light sleep during idle, deep sleep support
+- 📊 **JSON Export Re-enabled**: 520KB RAM available (removed from Arduino)
+- 🎯 **Pre-rendering**: Cache 10 keyframes → 80+ FPS
+
+**ESP32-Specific Gotchas**:
+- 🟡 **WiFi Interference with I2C**: Pin rendering to Core 1 to avoid
+- 🟡 **Brownout Detector Resets**: Adjust threshold + recommend 500mA regulator
+- 🟡 **Watchdog Timer Resets**: Feed watchdog in `update()` loop
+- 🟡 **Weak Internal Pull-ups**: Use external 2.2kΩ resistors for 400kHz I2C
+
+**Recommended Action Items**:
+
+**Priority 1 (Include in v1)**:
+1. Document I2C DMA option (10-line code change for 20 FPS gain)
+2. Create `examples/ESP32_DualCore/` for dual-core rendering
+3. Create `examples/ESP32_BLE_Control/` for AI integration
+
+**Priority 2 (Post-v1)**:
+4. Implement dual-core rendering behind `#ifdef ESP32_OPTIMIZATIONS`
+5. Re-enable JSON export on ESP32 (520KB available)
+6. Expression caching (10KB lookup table)
+
+**Priority 3 (Future)**:
+7. OTA update support
+8. Power management hooks (light/deep sleep)
+9. ESP32-S3 2D graphics acceleration (if available)
+
+---
+
+### 6.3 Performance Comparison Table
+
+| Metric | Arduino Nano (Current) | Arduino Nano (Optimized) | ESP32 (Current) | ESP32 (Optimized) |
+|--------|------------------------|--------------------------|-----------------|-------------------|
+| **Target FPS** | 15-20 | 20-25 | 30-60 | 60+ |
+| **Frame Time** | 50-67ms | 40-50ms | 17-33ms | <16ms |
+| **I2C Transfer** | 40-50ms @ 100kHz | 10-15ms @ 400kHz | 15ms @ 400kHz | 2ms DMA |
+| **Rendering** | 8-12ms | 8-12ms | 8-12ms | 8-12ms (Core 1) |
+| **Easing Calc** | 2-3ms (float) | 0.5ms (LUT) | 2-3ms (float) | 0.5ms (LUT) |
+| **User Code** | ~1000B | ~900B | 519KB | 519KB |
+| **Library RAM** | 1.04KB | 1.04KB | 1.04KB | 1.04KB |
+
+**Key Takeaway**: I2C 400kHz + lookup table easing are **critical** for all platforms. ESP32 gains additional 4x from dual-core + DMA.
+
+---
+
+### 6.4 Implementation Priority Summary
+
+**Phase 1 (v1.0 - All Platforms)**:
+- ✅ I2C 400kHz with auto-fallback
+- ✅ Cubic easing lookup table (PROGMEM, 256 bytes)
+- ✅ Dirty flag rendering (skip idle frames)
+- ✅ Integer angle representation
+- ✅ Stack usage validation (600B minimum Nano)
+- ✅ PROGMEM for all const data
+- ✅ F() macro for Serial strings
+
+**Phase 2 (v1.1 - ESP32 Examples)**:
+- ⏸️ `examples/ESP32_DualCore/` (dual-core rendering)
+- ⏸️ `examples/ESP32_BLE_Control/` (BLE GATT service)
+- ⏸️ Document I2C DMA option
+- ⏸️ Re-enable JSON export on ESP32
+
+**Phase 3 (v2.0 - Advanced Features)**:
+- 🔮 Expression caching (ESP32 only)
+- 🔮 OTA update support
+- 🔮 Power management hooks
+- 🔮 Hardware SPI option
+- 🔮 128x32 display support (Nano: 1500B user code)
+
+**Full details**: See [platform-reviews.md](./platform-reviews.md) for complete expert reviews.
 | **Missing Primitives** | Custom `drawEllipse()` + `fillTriangle()` eyelids | ~100 bytes code; simpler than full arc implementation |
 | **Double Buffering** | GFXcanvas1 offscreen canvas | 1KB RAM cost acceptable; eliminates flicker |
 | **I2C Speed** | 400kHz fast mode | Essential for 20 FPS on Mega |

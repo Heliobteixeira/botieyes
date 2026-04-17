@@ -90,8 +90,8 @@ struct EyePositionState {
 struct ExpressionParameters {
     float pupilDilation;      // 0.0 (tiny) to 1.0 (large) - pupil size multiplier
     float eyelidOpenness;     // 0.0 (closed) to 1.0 (fully open)
-    float browAngle;          // -1.0 (sad/angry) to +1.0 (happy/surprised)
-    float eyeSquint;          // 0.0 (none) to 1.0 (full squint) - affects eyelid curve
+    float browAngle;          // -1.0 (sad/angry) to +1.0 (happy/surprised) - NOW RENDERED as 6th primitive (eyebrow arc)
+    float eyeSquint;          // 0.0 (none) to 1.0 (full squint) - affects eyelid curve; added for anxiety disambiguation
     
     // Computed from EyePositionState (for rendering, coupled for both eyes)
     int16_t pupilOffsetX;     // Horizontal offset from center (pixels, both eyes)
@@ -305,11 +305,12 @@ enum ErrorCode {
 **Arduino Nano Budget Check** (2KB SRAM, PRIMARY TARGET):
 - Library state: 80 bytes (reduced via coupled eye control, simplified features)
 - Framebuffer (128x64): 1024 bytes
-- Library stack/heap: ~400 bytes (reduced - no JSON export, no roll(), simpler rendering)
+- Library stack/heap: ~670 bytes (INCREASED: +40B eyebrow, +80B thinking, +100B idle behaviors, +50B anxiety disambiguation = +270B from baseline)
 - Wire/Serial buffers: 134 bytes
-- **Used**: ~1.04KB
-- **Remaining for user**: ~1000 bytes ✅ **VIABLE** - Sufficient for dedicated eye controller
-- **Alternative**: Use 128x32 display (512 bytes framebuffer → ~1500 bytes user code)
+- **Used**: ~1.31KB (increased from 1.04KB)
+- **Remaining for user**: ~730 bytes ✅ **VIABLE** - Sufficient for dedicated eye controller with design enhancements
+- **Alternative**: Use 128x32 display (512 bytes framebuffer → ~1200 bytes user code)
+- **Note**: Design expert reviews identified critical enhancements (eyebrows, thinking state, idle behaviors) worth the +270B cost
 
 **Arduino Mega Budget Check** (8KB SRAM):
 - Library state: 80 bytes

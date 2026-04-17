@@ -39,6 +39,13 @@ public:
     ErrorCode content(float intensity = 1.0);
     ErrorCode curious(float intensity = 1.0);
     
+    // Conversational AI Helpers (added per HRI expert review)
+    ErrorCode thinking(float intensity = 1.0);   // Neutral valence (0.0), moderate arousal (0.45), horizontal scanning
+    ErrorCode confused(float intensity = 1.0);   // Slight negative valence (-0.15), moderate arousal (0.55), asymmetric brows
+    
+    // Idle Behaviors (added per HRI expert review)
+    ErrorCode enableIdleBehavior(bool enable = true);  // Enable/disable breathing analog (periodic micro-blinks + pupil pulsation)
+    
     // Eye Position Control (coupled, both eyes move together)
     ErrorCode setEyePosition(int16_t h, int16_t v, uint16_t duration_ms = 300);
     void getEyePosition(int16_t* h, int16_t* v);

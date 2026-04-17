@@ -7,7 +7,7 @@
 
 ## Summary
 
-Build a parametric emotion-driven eye animation library for OLED displays using valence-arousal model. Primary requirement: Enable AI-driven development through PC emulation with PNG export for multimodal feedback. The library provides continuous emotional expression (vs discrete moods in RoboEyes), independent 2D eye position control, and cross-platform support (Arduino Mega, ESP32, PC emulator). Technical approach: Minimal dependencies (Adafruit GFX only for embedded), static memory allocation, standalone C++ library structure for Arduino IDE, MVP prioritizing emulator PNG export before full embedded implementation.
+Build a parametric emotion-driven eye animation library for OLED displays using valence-arousal model. Primary requirement: Enable AI-driven development through PC emulation with PNG export for multimodal feedback. The library provides continuous emotional expression (vs discrete moods in RoboEyes), coupled 2D eye position control (both eyes move together; independent per-eye control deferred to v2), and cross-platform support (Arduino Mega, ESP32, PC emulator). Technical approach: Minimal dependencies (Adafruit GFX only for embedded), static memory allocation, standalone C++ library structure for Arduino IDE, MVP prioritizing emulator PNG export before full embedded implementation.
 
 ## Technical Context
 
@@ -19,7 +19,7 @@ Build a parametric emotion-driven eye animation library for OLED displays using 
 **Project Type**: Embedded library (Arduino IDE compilation) + PC emulator (development tool)  
 **Performance Goals**: 15-20 FPS (Nano), 20-25 FPS (Mega), 30-60 FPS (ESP32), 60+ FPS (PC emulator); <300ms transition latency  
 **Constraints**: Static allocation only (no malloc/new); 2KB SRAM minimum (Nano); ~1.6KB library footprint leaves ~0.4KB for user code on Nano (CRITICAL), ~6.4KB on Mega; minimal dependencies; I2C fast mode essential  
-**Scale/Scope**: Single library; 5 geometric primitives per eye; 10+ emotion anchors; 3 built-in animations; 3 platform targets + emulator
+**Scale/Scope**: Single library; 1-3 geometric primitives per eye (finalized minimalist design, 8.4/10 expressiveness); 12 emotion anchors; 2 built-in animations (blink, wink); 3 platform targets (Nano PRIMARY, Mega, ESP32) + emulator
 
 ## Constitution Check
 

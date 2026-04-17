@@ -54,19 +54,21 @@ Expression intensity varies continuously based on emotion coordinates from subtl
 
 ---
 
-### User Story 4 - Independent Eye Position Control (Priority: P4)
+### User Story 4 - Coupled Eye Position Control (Priority: P4)
 
-Developers control each eye independently in 2D space (horizontal + vertical). Eyes can converge, diverge, look up/down, or execute custom animations.
+Developers control 2D gaze direction (horizontal + vertical) with both eyes moving together as a coupled pair. Eyes can look left/right/up/down with smooth coordinated movement.
 
 **Why this priority**: Enables directional gaze and spatial awareness essential for interactive robots.
 
-**Independent Test**: Command individual eye positions in H/V axes, verify independent movement.
+**Design Note**: v1 uses coupled control (both eyes move together) for memory efficiency and simplicity. Independent per-eye control deferred to v2.
+
+**Independent Test**: Command eye gaze positions in H/V axes, verify smooth coupled movement with both eyes coordinated.
 
 **Acceptance Scenarios**:
 
-1. **Given** both eyes neutral, **When** set left(-30°,0°) right(+30°,0°), **Then** eyes converge toward center
-2. **Given** eyes neutral, **When** set both(0°,+20°), **Then** eyes look up together
-3. **Given** independent positions set, **When** emotion changes, **Then** emotion applies to both eyes preserving relative positions
+1. **Given** eyes neutral, **When** setEyePosition(+20, 0), **Then** both eyes look right together maintaining parallel gaze
+2. **Given** eyes neutral, **When** setEyePosition(0, +20), **Then** both eyes look up together
+3. **Given** eye position set, **When** emotion changes, **Then** emotion applies to both eyes while preserving gaze direction
 
 ---
 

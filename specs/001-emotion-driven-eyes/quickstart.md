@@ -10,10 +10,11 @@ BotiEyes is a parametric emotion-driven eye animation library for OLED displays.
 
 **Key Features**:
 - ✅ Continuous emotional expressions (not discrete moods)
-- ✅ Independent 2D eye position control (converge, diverge, look around)
-- ✅ Smooth animations (blink, wink, roll)
+- ✅ Emotion helper methods for easy use (`happy()`, `sad()`, `angry()`, etc.)
+- ✅ Coupled 2D eye position control (look around together)
+- ✅ Smooth animations (blink, wink)
 - ✅ Minimal dependencies (Adafruit GFX only)
-- ✅ Works on Arduino Mega, ESP32, and PC emulator
+- ✅ Works on Arduino Nano (primary), Mega, ESP32, and PC emulator
 
 ---
 
@@ -114,8 +115,8 @@ void loop() {
 void setup() {
     // ... (initialization code from above)
     
-    // Happy expression (positive valence, moderate arousal)
-    eyes.setEmotion(0.3, 0.6, 1000);  // 1 second transition
+    // Happy expression using emotion helper
+    eyes.happy();  // Simple and intuitive!
 }
 
 void loop() {
@@ -124,18 +125,25 @@ void loop() {
 }
 ```
 
-**Emotion Values Guide**:
+**Emotion Helper Methods** (easy to use):
 
-| Emotion | Valence | Arousal | Description |
-|---------|---------|---------|-------------|
-| Happy | +0.35 | 0.55 | Wide eyes, "smiling" brows |
-| Sad | -0.35 | 0.35 | Droopy eyelids, downturned brows |
-| Angry | -0.30 | 0.80 | Narrow eyes, intense gaze |
-| Calm | +0.20 | 0.25 | Relaxed, half-open |
-| Excited | +0.30 | 0.90 | Very wide eyes, energetic |
-| Tired | +0.05 | 0.10 | Heavy eyelids, low energy |
+| Method | Description |
+|--------|-------------|
+| `happy()` | Wide eyes, "smiling" brows |
+| `sad()` | Droopy eyelids, downturned brows |
+| `angry()` | Narrow eyes, intense gaze |
+| `calm()` | Relaxed, half-open |
+| `excited()` | Very wide eyes, energetic |
+| `tired()` | Heavy eyelids, low energy |
+| `surprised()` | Very wide eyes, raised brows |
+| `anxious()` | Tense, high arousal |
+| `content()` | Peaceful, satisfied |
+| `curious()` | Attentive, interested |
 
-**Tip**: Values between these create intermediate expressions!
+**Advanced**: Use `setEmotion(valence, arousal, duration)` for custom emotions:
+```cpp
+eyes.setEmotion(0.42, 0.73, 600);  // Custom emotion for AI integration
+```
 
 ---
 
@@ -149,12 +157,13 @@ void loop() {
     // Change emotion every 3 seconds
     if (millis() - lastChange > 3000) {
         switch(emotionIndex) {
-            case 0: eyes.setEmotion(0.3, 0.6); break;    // Happy
-            case 1: eyes.setEmotion(-0.35, 0.35); break; // Sad
-            case 2: eyes.setEmotion(-0.3, 0.8); break;   // Angry
-            case 3: eyes.setEmotion(0.2, 0.25); break;   // Calm
+            case 0: eyes.happy(); break;
+            case 1: eyes.sad(); break;
+            case 2: eyes.angry(); break;
+            case 3: eyes.calm(); break;
+            case 4: eyes.surprised(); break;
         }
-        emotionIndex = (emotionIndex + 1) % 4;
+        emotionIndex = (emotionIndex + 1) % 5;
         lastChange = millis();
     }
     
@@ -172,14 +181,14 @@ void loop() {
     static unsigned long lastMove = 0;
     static int step = 0;
     
-    // Move eyes every 2 seconds
+    // Move eyes every 2 seconds (both eyes move together)
     if (millis() - lastMove > 2000) {
         switch(step) {
             case 0: eyes.neutral(); break;      // Center
             case 1: eyes.lookLeft(); break;     // Look left
             case 2: eyes.lookRight(); break;    // Look right
             case 3: eyes.lookUp(); break;       // Look up
-            case 4: eyes.converge(); break;     // Cross-eyed
+            case 4: eyes.lookDown(); break;     // Look down
         }
         step = (step + 1) % 5;
         lastMove = millis();
@@ -190,13 +199,12 @@ void loop() {
 }
 ```
 
-**Position Methods**:
+**Position Methods** (coupled control - both eyes move together):
 - `neutral()` - Center gaze (0°, 0°)
 - `lookLeft()` - Both eyes left
 - `lookRight()` - Both eyes right
 - `lookUp()` / `lookDown()` - Vertical gaze
-- `converge()` - Eyes look inward
-- `diverge()` - Eyes look outward
+- `setEyePosition(h, v, duration)` - Custom position with configurable speed
 
 ---
 
@@ -218,15 +226,19 @@ void loop() {
 ```
 
 **Animation Methods**:
-- `blink()` - Both eyes close and reopen
-- `blink(duration)` - Slow blink
-- `wink(EYE_LEFT)` / `wink(EYE_RIGHT)` - One eye
-- `roll(ROLL_CW)` - Circular eye roll
+- `blink()` - Both eyes close and reopen (default 150ms)
+- `blink(duration)` - Slow blink (custom duration)
+- `wink(EYE_LEFT)` / `wink(EYE_RIGHT)` - One eye wink
+
+**Note**: `roll()` animation removed in v1 for memory efficiency. Use emotion + position combinations instead.
 
 ---
 
 ## Example 5: AI Serial Control
 
+**Note**: Serial protocol is **not built into the library**. See `examples/SerialControl/SerialControl.ino` for a complete reference implementation.
+
+**Example Implementation**:
 ```cpp
 void setup() {
     Serial.begin(115200);
@@ -239,19 +251,20 @@ void loop() {
         String command = Serial.readStringUntil('\n');
         command.trim();
         
-        if (command.startsWith("EMO:")) {
-            // Parse "EMO:valence,arousal"
+        // Emotion helpers (simplified)
+        if (command == "HAPPY") eyes.happy();
+        else if (command == "SAD") eyes.sad();
+        else if (command == "ANGRY") eyes.angry();
+        
+        // Or parametric control
+        else if (command.startsWith("EMO:")) {
             int comma = command.indexOf(',');
             float valence = command.substring(4, comma).toFloat();
             float arousal = command.substring(comma + 1).toFloat();
-            
-            ErrorCode result = eyes.setEmotion(valence, arousal);
-            Serial.println(result == OK ? "OK" : "ERROR");
+            eyes.setEmotion(valence, arousal);
         }
-        else if (command == "QUERY") {
-            // Send current state as JSON
-            Serial.println(eyes.getExpressionState());
-        }
+        
+        Serial.println("OK");
     }
     
     eyes.update();
@@ -261,10 +274,12 @@ void loop() {
 
 **Test Commands** (via Serial Monitor):
 ```
-EMO:0.3,0.8      → Happy and excited
-EMO:-0.35,0.35   → Sad and calm
-QUERY            → Get JSON state
+HAPPY            → Show happy emotion
+SAD              → Show sad emotion
+EMO:0.3,0.8      → Custom emotion (parametric)
 ```
+
+**PC Emulator**: JSON export available in Python emulator for AI analysis (not on Arduino for memory reasons).
 
 ---
 
@@ -289,7 +304,9 @@ python botieyes_emulator.py
 
 ## Performance Tips
 
-### Arduino Nano (15-20 FPS Target) ⚠️ **TIGHT MEMORY**
+### Arduino Nano (15-20 FPS Target) - PRIMARY PLATFORM
+
+**Memory Budget**: Library uses ~1.04KB, leaving **~1000 bytes for user code** ✅ (viable for dedicated eye controller)
 
 1. **Enable I2C Fast Mode** (400kHz) - **CRITICAL**:
    ```cpp
@@ -310,15 +327,20 @@ python botieyes_emulator.py
    delay(50);  // 20 FPS (achievable with I2C fast mode)
    ```
 
-4. **Monitor Memory** (critical on Nano):
+4. **Monitor Memory** (recommended on Nano):
    ```cpp
+   extern int __heap_start, *__brkval;
+   int freeMemory() {
+       int v;
+       return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+   }
    Serial.print("Free RAM: ");
    Serial.println(freeMemory());  // Should be >100 bytes minimum
    ```
 
 5. **Consider Smaller Display** (saves 512 bytes):
    ```cpp
-   // 128x32 instead of 128x64
+   // 128x32 instead of 128x64 → ~1500 bytes user code
    .type = DISPLAY_SSD1306_128x32,
    .width = 128,
    .height = 32
@@ -357,12 +379,13 @@ delay(16);  // 60 FPS (ESP32 easily handles this)
 - **Memory**: Check if RAM is running low (especially Nano)
 
 ### Random Crashes or Glitches (Nano)
-- **Out of memory**: Library uses ~1.6KB, only ~400 bytes left
+- **Out of memory**: Library uses ~1.04KB, ~1000 bytes available for user code (after simplifications)
 - **Solutions**:
   - Move strings to PROGMEM: `const char[] PROGMEM`
   - Reduce global variables
-  - Use 128x32 display (saves 512 bytes)
-  - Upgrade to Mega (8KB RAM)
+  - Avoid String class (use char arrays)
+  - Use 128x32 display (saves 512 bytes → ~1500 bytes user code)
+  - Upgrade to Mega (8KB RAM → ~7KB user code)
 
 ### Eyes Look Wrong
 - **Calibration**: Emotion values are subjective; adjust to taste

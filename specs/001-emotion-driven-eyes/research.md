@@ -56,6 +56,37 @@ test/
 - ✅ Boundary conditions (screen edges, invalid inputs, clamping)
 - ✅ Memory usage (compile-time checks via `pio run -t size`)
 - ✅ Rendering output (via MockDisplay + checksums)
+- ✅ **Emotion helper methods** (happy(), sad(), etc. → correct valence-arousal mapping)
+- ✅ **API method coverage** (getCurrentEmotion(), getEyePosition() mid-interpolation)
+- ✅ **Edge cases** (boundary values, out-of-bounds clamping, concurrent operations)
+- ✅ **Config validation** (validateConfig() bounds checking)
+
+**Test Coverage Requirements** (per review):
+
+**Tier 1 - Core Functionality** (MUST test before task generation):
+- `initialize()` - success, hardware errors, invalid config
+- `setEmotion()` - valence/arousal clamping, interpolation start
+- `getCurrentEmotion()` - mid-interpolation values, boundary conditions
+- `setEyePosition()` - angle clamping, duration parameter
+- `getEyePosition()` - mid-interpolation values
+- `blink()`, `wink()` - animation state transitions
+- `update()` - frame timing, interpolation advancement
+- Emotion helpers - `happy()`, `sad()`, `angry()`, etc. map to correct coordinates
+- Config validation - `validateConfig()` rejects invalid addresses/pins
+
+**Tier 2 - Edge Cases** (SHOULD test before release):
+- Boundary values: valence = -0.5/0/+0.5, arousal = 0/1
+- Out-of-bounds: valence = -1, arousal = 2 (should clamp)
+- Concurrent `setEmotion()` during active interpolation
+- Animation interruption (blink → wink mid-animation)
+- Position + emotion simultaneous change
+- Zero duration transitions
+
+**Tier 3 - Performance & Longevity** (SHOULD test for production):
+- Frame timing: 100-frame average < 66ms for 15 FPS target
+- Longevity: 10,000 frames without memory leaks
+- Stress test: 1000 rapid `setEmotion()` calls
+- I2C timing validation (400kHz detection)
 
 **Manual Validation (Pre-Release)**:
 - 👁️ Visual aesthetics (emotional expressiveness)
@@ -76,9 +107,16 @@ jobs:
 ```
 
 **Memory Constraint Validation**:
-- Ensure compiled library ~1.6KB (leaving ~400 bytes for user code on Nano, >6KB on Mega)
+- Ensure compiled library ~1.04KB (leaving ~1000 bytes for user code on Nano after simplifications, >7KB on Mega)
 - Fail CI if RAM usage exceeds targets
-- Warn if Nano build exceeds 1.8KB (leaves <200 bytes for user)
+- Warn if Nano build exceeds 1.2KB (leaves <800 bytes for user)
+
+**Key Memory Improvements** (per review decisions applied 2026-04-17):
+- Removed JSON export: +250 bytes RAM
+- Coupled eye control: +16 bytes RAM (state reduction)
+- Removed roll() animation: +50 bytes stack
+- Removed EyeRenderer abstraction: +30 bytes RAM
+- **Net result**: 1.04KB library (was 1.6KB), **1000 bytes user code on Nano** ✅ VIABLE
 
 ---
 
@@ -135,30 +173,42 @@ jobs:
 - SSD1306 128x32: 512 bytes
 - SH1106 128x64: 1024 bytes
 
-**Library Overhead** (estimated):
+**Library Overhead** (estimated, after simplifications 2026-04-17):
 - Adafruit GFX: ~200 bytes static data
 - Adafruit SSD1306: ~200-300 bytes driver state
-- BotiEyes state: ~100 bytes (emotion, position, expression parameters)
+- BotiEyes state: ~80 bytes (emotion, position, expression parameters - reduced via coupled control)
+- Wire/Serial buffers: ~134 bytes (I2C + Serial)
 
 **Total RAM Usage**:
 
 **Arduino Nano (2KB SRAM, 128x64 display)** - **PRIMARY TARGET**:
-- Framebuffer: 1024 bytes (if using GFXcanvas1)
-- Libraries: ~500 bytes
-- BotiEyes state: ~100 bytes
-- **Total library**: ~1600 bytes
-- **User code available**: ~400 bytes ⚠️ **VERY TIGHT**
-- **Recommendation**: Minimize global variables, use PROGMEM for constants, consider 128x32 display (saves 512 bytes)
+- Framebuffer: 1024 bytes (GFXcanvas1)
+- Libraries: ~500 bytes (Adafruit GFX + SSD1306)
+- BotiEyes state: ~80 bytes
+- Wire/Serial buffers: ~134 bytes
+- Stack/heap overhead: ~300 bytes
+- **Total library**: ~1040 bytes (~1.04KB)
+- **User code available**: ~1000 bytes ✅ **VIABLE** for dedicated eye controller
+- **Recommendation**: Use PROGMEM for constants, avoid String class, consider 128x32 display for more headroom
+- **Alternative**: 128x32 display saves 512 bytes framebuffer → ~1500 bytes user code
 
 **Arduino Mega (8KB SRAM, 128x64 display)**:
-- Framebuffer: 1024 bytes (if using GFXcanvas1)
+- Framebuffer: 1024 bytes
 - Libraries: ~500 bytes
-- BotiEyes state: ~100 bytes
-- **Remaining for user code**: ~6.4KB
+- BotiEyes state: ~80 bytes
+- Wire/Serial buffers: ~134 bytes
+- Stack/heap overhead: ~300 bytes
+- **Total library**: ~1040 bytes
+- **Remaining for user code**: ~7KB ✅ **COMFORTABLE**
 
 **ESP32 (520KB SRAM)**: No memory concerns; ample headroom for optimizations.
 
-**Validation**: BotiEyes library fits on Arduino Nano with **minimal** user code headroom (~400 bytes). Mega provides comfortable 6.4KB for user applications.
+**Validation**: BotiEyes library (v1 simplified) fits on Arduino Nano with **viable** user code headroom (~1000 bytes). Mega provides comfortable 7KB for user applications.
+
+**Changes from Initial Estimate** (per expert review 2026-04-17):
+- Initial estimate: 1.6KB total, 400 bytes user code (NOT viable)
+- After simplifications: 1.04KB total, 1000 bytes user code (VIABLE)
+- Key removals: JSON export, independent eye control, roll() animation, EyeRenderer abstraction, serial protocol built-in
 
 ---
 

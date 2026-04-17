@@ -195,11 +195,13 @@ Before proceeding to `/speckit.tasks`:
 
 - [x] Update data-model.md (EyePositionState, ExpressionParameters, memory budget)
 - [x] Update review-findings.md (document decisions)
-- [ ] Update contracts/BotiEyes-API.md (API changes, remove JSON/roll, add helpers)
-- [ ] Update quickstart.md (examples with helpers, memory tips)
-- [ ] Update research.md (test coverage, memory footprint)
-- [ ] Update plan.md (constitution check, complexity tracking)
-- [ ] Update spec.md (FR requirements for helpers, remove roll/JSON requirements)
+- [x] Update contracts/BotiEyes-API.md (API changes, remove JSON/roll, add helpers)
+- [x] Update quickstart.md (examples with helpers, memory tips)
+- [x] Update research.md (test coverage, memory footprint)
+- [x] Update plan.md (constitution check, complexity tracking)
+- [x] Update spec.md (FR requirements for helpers, remove roll/JSON requirements)
+
+**Status**: ✅ ALL ARTIFACTS UPDATED - Ready for `/speckit.tasks`
 
 ---
 

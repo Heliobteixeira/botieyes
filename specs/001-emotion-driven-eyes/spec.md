@@ -124,7 +124,7 @@ AI systems dynamically control bot emotions through simple API calls or serial c
 - Rationale: Explicit configuration avoids detection complexity and code overhead
 
 **Q3: Custom Animation Format (FR-012)**
-- A: **Built-in animations only**: Library provides predefined sequences (blink, wink, roll) with configurable parameters; no custom animation creation
+- A: **Built-in animations only**: Library provides predefined sequences (blink, wink) with configurable parameters; roll() removed in v1 for memory efficiency; no custom animation creation
 - Rationale: Simplifies implementation; meets core requirements without custom animation complexity
 
 **Q4: PC Emulator Technology (FR-005)**
@@ -195,18 +195,20 @@ AI systems dynamically control bot emotions through simple API calls or serial c
 - **FR-004**: Library MUST render animated eyes on OLED displays (I2C/SPI) using Adafruit GFX as sole rendering dependency
 - **FR-005**: Library MUST provide PC emulator (Python + Pygame) with PNG export as highest priority feature for AI feedback; emulator must be functional in MVP before full Arduino implementation
 - **FR-006**: Library MUST support Arduino (Nano, Uno) and ESP32 platforms with appropriate resource constraints
-- **FR-007**: Library MUST expose API with ErrorCode returns: initialize(config) [sets default state to (0.0, 0.5)], setEmotion(valence, arousal, duration_ms=400), setEyePosition(leftH, leftV, rightH, rightV) [300ms interpolation], update() [called at target FPS], getCurrentEmotion(), getEyePosition(); emotion and position updates are independent and additive
+- **FR-007**: Library MUST expose API with ErrorCode returns: initialize(config) [sets default state to (0.0, 0.5)], setEmotion(valence, arousal, duration_ms=400), setEyePosition(h, v, duration_ms=300) [configurable duration for coupled eye control], update() [called at target FPS], getCurrentEmotion() [void return], getEyePosition() [void return]; emotion and position updates are independent and additive
+- **FR-007a**: Library MUST provide emotion helper methods for common emotions: happy(), sad(), angry(), calm(), excited(), tired(), surprised(), anxious(), content(), curious() with optional intensity parameter (0.0-1.0); helpers map to predefined valence-arousal coordinates while keeping parametric model available for AI integration
+- **FR-007b**: Library MUST provide validateConfig(DisplayConfig) static method to validate configuration before initialization (I2C address, SPI pins, display dimensions)
 - **FR-008**: Emulator MUST provide captureFrame() returning PNG image viewable by multimodal AI
-- **FR-009**: Library MUST provide getExpressionState() returning JSON with current emotion coordinates and derived visual parameters
-- **FR-010**: Library MUST support independent 2D eye position control per eye (horizontal -90° to +90°, vertical -45° to +45°) with smooth interpolation over fixed 300ms duration
-- **FR-011**: Library MUST provide predefined behaviors: converge(), diverge(), lookLeft(), lookRight(), lookUp(), lookDown(), neutral()
-- **FR-012**: Library MUST support built-in animation sequences: blink(duration), wink(eye, duration), roll(direction, speed) with configurable parameters; new animations interrupt current animation immediately
+- **FR-009**: PC emulator MUST provide getExpressionState() returning JSON with current emotion coordinates and derived visual parameters; Arduino library does NOT include JSON export (removed for memory efficiency)
+- **FR-010**: Library MUST support coupled 2D eye position control (both eyes move together): horizontal -90° to +90°, vertical -45° to +45° with smooth interpolation over configurable duration (default 300ms); independent eye control deferred to v2
+- **FR-011**: Library MUST provide predefined behaviors: lookLeft(), lookRight(), lookUp(), lookDown(), neutral(); converge() and diverge() removed (not needed with coupled control)
+- **FR-012**: Library MUST support built-in animation sequences: blink(duration), wink(eye, duration) with configurable parameters; new animations interrupt current animation immediately; roll() animation removed in v1 for memory efficiency
 - **FR-013**: Library MUST render eyes using 5 geometric primitives per eye: outer ellipse, pupil circle, upper eyelid arc, lower eyelid arc, highlight dot
-- **FR-014**: Library MUST use smooth easing functions (ease-in-out-cubic baseline; context-aware variants for emotion types)
-- **FR-015**: Library MUST provide serial interface ("EMO:v,a", "POS:lh,lv,rh,rv", "QUERY" returns JSON state); invalid commands return "ERROR:<code>" strings
-- **FR-016**: Library MUST maintain target FPS: ESP32 ≥30 FPS, Arduino Mega ≥20 FPS, PC emulator ≥60 FPS; developer MUST call update() at target frame rate for proper animation timing
+- **FR-014**: Library MUST use smooth easing functions (ease-in-out-cubic for transitions)
+- **FR-015**: Serial protocol NOT built into library (moved to example sketch for flexibility); examples/SerialControl provides reference implementation supporting "EMO:v,a", "POS:h,v", emotion helper commands ("HAPPY", "SAD", etc.)
+- **FR-016**: Library MUST maintain target FPS: Arduino Nano ≥15 FPS (PRIMARY), Arduino Mega ≥20 FPS, ESP32 ≥30 FPS, PC emulator ≥60 FPS; developer MUST call update() at target frame rate for proper animation timing
 - **FR-017**: Library MUST use explicit emotion mapping (see Emotion Mapping Table) with 10+ defined emotion anchors; mapping formulas are hardcoded and not customizable in v1
-- **FR-018**: Library MUST implement platform profiles with appropriate resource constraints per platform; use static memory allocation only (no dynamic allocation)
+- **FR-018**: Library MUST implement platform profiles with appropriate resource constraints per platform; use static memory allocation only (no dynamic allocation); Arduino Nano primary target with ~1000 bytes user code after simplifications (JSON export, independent eye control, roll() animation removed)
 - **FR-019**: Library MUST require explicit display configuration in initialize(): display type (SSD1306/SH1106), protocol (I2C/SPI), I2C address or SPI pins, resolution (width, height)
 - **FR-020**: PC emulator MUST be implemented in Python using Pygame for graphics, enabling rapid development and easy integration with AI workflows
 - **FR-021**: Library MUST define ErrorCode enum with values: OK, INVALID_INPUT, HARDWARE_ERROR, TIMEOUT, DISPLAY_NOT_FOUND, MEMORY_ERROR
@@ -242,25 +244,26 @@ eye_squint = max(0, (0.5 - arousal) × 0.4) if valence < 0 else 0
 
 ### Platform Profiles
 
-| Platform | SRAM | Target FPS | Features | Notes |
-|----------|------|------------|----------|-------|
-| **Arduino Nano** | 2 KB | 15-20 | Core emotions, basic animations | Primary target (tight memory) |
-| **Arduino Mega 2560** | 8 KB | 20-25 | Full feature set | Comfortable memory |
-| **ESP32** | 520 KB | 30-60 | Full + WiFi/BLE | High performance |
-| **PC Emulator** | >1 GB | 60+ | Full + debugging, frame capture | Development platform |
+| Platform | SRAM | Target FPS | Features | Library RAM | User RAM | Notes |
+|----------|------|------------|----------|-------------|----------|-------|
+| **Arduino Nano** (PRIMARY) | 2 KB | 15-20 | Core emotions, basic animations | ~1.04 KB | ~1000 bytes | Dedicated eye controller, I2C fast mode essential |
+| **Arduino Mega 2560** | 8 KB | 20-25 | Core emotions, basic animations | ~1.04 KB | ~7 KB | Comfortable headroom |
+| **ESP32** | 520 KB | 30-60 | Full feature set, WiFi/BLE | ~1.04 KB | >500 KB | Standard target |
+| **PC Emulator** | >1 GB | 60+ | Full + debugging, JSON export | N/A | N/A | Development platform |
 
-*Note: Arduino Nano requires careful memory management (~400 bytes user code headroom)*
+*Note: Nano viable as primary target after v1 simplifications (removed JSON export, independent eye control, roll() animation)*
 
 ### Key Entities
 
 - **Emotion State**: Current (valence, arousal) coordinates and interpolation target
-- **Eye Position State**: Independent 2D position per eye (horizontal/vertical angles, animation state)
+- **Eye Position State**: Coupled 2D position for both eyes (horizontal/vertical angles, animation state); independent control deferred to v2
 - **Expression Parameters**: Derived visuals (pupil dilation, eyelid openness, brow angle, pupil position, eyelid curve)
-- **Animation Interpolator**: Smooth transitions using easing functions (emotion-specific)
+- **Animation Interpolator**: Smooth transitions using easing functions (ease-in-out-cubic)
 - **Display Adapter**: Platform-specific interface (OLED I2C/SPI, PC window) with captureFrame() for emulator
-- **Emotion Mapper**: Converts (valence, arousal) → expression parameters using mapping table
-- **Eye Renderer**: Draws 5-8 geometric primitives per eye optimized for low-resolution displays
-- **State Inspector**: Serializes expression state to JSON for AI feedback and debugging
+- **Emotion Mapper**: Converts (valence, arousal) → expression parameters using mapping formulas
+- **Eye Renderer**: Draws 5 geometric primitives per eye optimized for low-resolution displays; inlined into BotiEyes class for v1 efficiency
+- **State Inspector**: Serializes expression state to JSON for AI feedback (PC emulator only; removed from Arduino for memory)
+- **Emotion Helpers**: Facade methods (happy(), sad(), angry(), etc.) mapping to predefined valence-arousal coordinates for ease of use
 
 ## Success Criteria *(mandatory)*
 
@@ -269,16 +272,16 @@ eye_squint = max(0, (0.5 - arousal) × 0.4) if valence < 0 else 0
 - **SC-001**: Developers integrate library into robot project in under 15 minutes using provided examples
 - **SC-002**: Eyes display 10+ distinct recognizable emotions (happy, sad, angry, calm, surprised, curious, tired, excited, anxious, content) using valence-arousal coordinates
 - **SC-003**: Expression transitions complete smoothly in 300-500ms without jarring jumps
-- **SC-004**: Library runs on Arduino Mega 2560 (8KB RAM) with >2KB free for application code
+- **SC-004**: Library runs on Arduino Nano (2KB RAM - PRIMARY) with ~1000 bytes free for application code; Mega (8KB RAM) with ~7KB free
 - **SC-005**: PC emulator enables developers to iterate without physical hardware
-- **SC-006**: Copilot can implement rendering, capture frames, verify output, and refine code in iterative loop
-- **SC-007**: AI verifies aesthetic quality of 10+ emotions by analyzing captured frames from emulator
-- **SC-008**: AI integration requires <10 lines of code for runtime emotion control (excluding setup)
-- **SC-009**: Library maintains 30+ FPS on ESP32, 20+ FPS on Arduino Mega, 60+ FPS on PC emulator
+- **SC-006**: Copilot can implement rendering, capture frames, verify output, and refine code in iterative loop (emulator only)
+- **SC-007**: AI verifies aesthetic quality of 10+ emotions by analyzing captured frames from emulator (emulator JSON export, not Arduino)
+- **SC-008**: AI integration requires <10 lines of code for runtime emotion control using helper methods (excluding setup)
+- **SC-009**: Library maintains 30+ FPS on ESP32, 20+ FPS on Arduino Mega, 15+ FPS on Arduino Nano (PRIMARY), 60+ FPS on PC emulator
 - **SC-010**: Expression intensity varies noticeably across valence/arousal ranges (pixel-level distinguishable)
 - **SC-011**: Eye shapes remain aesthetically pleasing on displays as small as 64x48 pixels per eye
-- **SC-012**: Independent eye movements (H/V) complete in 200-400ms with smooth interpolation
-- **SC-013**: Users identify gaze direction (left/right/up/down/converge/diverge) with >90% accuracy
+- **SC-012**: Coupled eye movements (H/V) complete in 200-400ms with smooth interpolation; independent eye control deferred to v2
+- **SC-013**: Users identify gaze direction (left/right/up/down) with >90% accuracy; converge/diverge removed in v1
 - **SC-014**: Library compiles successfully as Arduino library in Arduino IDE for Mega 2560 and ESP32 targets
 - **SC-015**: Library has zero dependencies beyond Adafruit GFX for embedded platforms
 - **SC-016**: MVP emulator demonstrates basic rendering with PNG export functional before Arduino implementation begins
@@ -286,22 +289,22 @@ eye_squint = max(0, (0.5 - arousal) × 0.4) if valence < 0 else 0
 ## Assumptions
 
 - **Display**: Monochrome OLED (SSD1306, SH1106), 0.96"-1.3", 64x48 to 128x64 pixels per eye; grayscale/color future
-- **Configuration**: Manual display setup required (type, protocol, pins, resolution specified in initialize())
-- **Platform**: Arduino Mega 2560 minimum (8KB SRAM); ESP32 recommended; Nano not supported due to memory
-- **Developers**: Basic Arduino/C++ knowledge; AI-driven development primary workflow
+- **Configuration**: Manual display setup required (type, protocol, pins, resolution specified in initialize()); validateConfig() available to check before init
+- **Platform**: Arduino Nano (2KB SRAM - PRIMARY after v1 simplifications), Mega 2560 (8KB SRAM), ESP32 (520KB SRAM); Nano viable with ~1000 bytes user code
+- **Developers**: Basic Arduino/C++ knowledge; AI-driven development primary workflow; emotion helper methods simplify common use cases
 - **Architecture**: Standalone C++ library (not sketch); compiled by Arduino IDE; follows Arduino library conventions (.h/.cpp structure)
 - **Dependencies**: Minimal - Adafruit GFX only for embedded platforms; Python + Pygame for emulator
 - **MVP Priority**: PC emulator with PNG export implemented first to enable AI visual feedback loop before full Arduino feature set
-- **Emulator**: Python 3.8+ with Pygame for cross-platform compatibility (Windows/macOS/Linux); trivial PNG capture and AI integration
-- **Rendering**: 5 primitives per eye (outer ellipse, pupil, upper lid, lower lid, highlight) with anti-aliasing via dithering; Adafruit GFX foundation
-- **Animations**: Built-in only (blink, wink, roll with configurable parameters); no custom animation creation
-- **Transitions**: Smooth (100-200ms latency acceptable) prioritized over real-time; easing functions emotion-specific; default 400ms for emotions, 300ms for positions
-- **Mapping**: Hardcoded baseline formulas; not customizable in v1; sensible defaults provided (see Emotion Mapping Table)
+- **Emulator**: Python 3.8+ with Pygame for cross-platform compatibility (Windows/macOS/Linux); trivial PNG capture and AI integration; JSON export emulator-only
+- **Rendering**: 5 primitives per eye (outer ellipse, pupil, upper lid, lower lid, highlight) with anti-aliasing via dithering; Adafruit GFX foundation; renderer inlined for v1 efficiency
+- **Animations**: Built-in only (blink, wink with configurable parameters); roll() removed in v1 for memory efficiency; no custom animation creation
+- **Transitions**: Smooth (100-200ms latency acceptable) prioritized over real-time; ease-in-out-cubic easing; default 400ms for emotions, configurable duration for positions (default 300ms)
+- **Mapping**: Hardcoded baseline formulas; not customizable in v1; sensible defaults provided (see Emotion Mapping Table); emotion helpers provide easy access to common emotions
 - **Timing**: Developer calls update() at target FPS; library does not use interrupts or internal timing
-- **Serial**: 115200 baud sufficient for AI control; bidirectional (query state via QUERY command)
-- **Error Handling**: All API methods return ErrorCode enum; no exceptions or global state; serial errors return "ERROR:<code>" strings
-- **Memory**: Static allocation only (no malloc/new); all buffers sized at compile-time or initialize()
-- **Debug**: No runtime debug output; use getExpressionState() JSON for diagnostics and troubleshooting
+- **Serial**: Protocol moved to example sketch (not built into library) for flexibility; examples/SerialControl provides reference implementation
+- **Error Handling**: All fallible API methods return ErrorCode enum; simple getters are void (cannot fail); no exceptions or global state
+- **Memory**: Static allocation only (no malloc/new); all buffers sized at compile-time or initialize(); JSON export only in emulator (removed from Arduino)
+- **Debug**: No runtime debug output; use getCurrentEmotion()/getEyePosition() for state queries (JSON only in emulator)
 - **Initialization**: Eyes display neutral (0.0, 0.5) immediately after successful initialize()
 - **Compatibility**: RoboEyes backward compatibility not required; migration guide provided
-- **Gaze**: Both eyes move together by default (parallel); independent control when explicitly commanded
+- **Gaze**: Both eyes move together (coupled control); independent control deferred to v2; converge/diverge removed in v1

@@ -53,23 +53,25 @@ Build a parametric emotion-driven eye animation library for OLED displays using 
 
 | Principle | Status | Design Validation |
 |-----------|--------|-------------------|
-| I. Pragmatic Simplicity | ✅ **PASS** | Data model minimal (96 bytes total state); API surface small (12 public methods); no unnecessary abstractions |
-| II. Maintainable Code | ✅ **PASS** | Clear entity separation (EmotionState, EyePositionState, ExpressionParameters); documented contracts; straightforward data flow |
-| III. Performance-First | ✅ **PASS** | Integer math planned; lookup tables in PROGMEM; GFXcanvas offscreen rendering; I2C fast mode specified; memory budget validated (1.6KB/2KB Nano = 80% library, 20% user code; 1.6KB/8KB Mega = 20% library, 80% user code) |
-| IV. Hardware Abstraction | ✅ **PASS** | DisplayConfig explicit; renderer separated from logic; EyeRenderer abstraction enables future displays |
-| V. Emotion-Driven | ✅ **PASS** | Valence-arousal core to all design; EmotionMapper central entity; continuous model throughout |
-| VI. Cross-Platform Emulation | ✅ **PASS** | PC emulator specified in architecture; PNG export in API contract; MockDisplay for testing |
-| VII. Extensible Architecture | ✅ **PASS** | Despite non-customizable mapping, architecture supports new display types via DisplayConfig enum, new animations via AnimationState enum, future emotion models via EmotionMapper refactor |
-| VIII. Continuous Learning | ✅ **PASS** | Research.md documents testing insights; 17 clarifications referenced in design; API contract traceable to spec decisions |
+| I. Pragmatic Simplicity | ✅ **PASS** | Data model minimal (80 bytes total state after simplifications); API surface small (15 public methods including emotion helpers); no premature abstractions (EyeRenderer removed per review) |
+| II. Maintainable Code | ✅ **PASS** | Clear entity separation (EmotionState, EyePositionState, ExpressionParameters); documented contracts; straightforward data flow; coupled eye control simplifies implementation |
+| III. Performance-First | ✅ **PASS** | Integer math planned; lookup tables in PROGMEM; GFXcanvas offscreen rendering; I2C fast mode specified; memory budget validated (1.04KB/2KB Nano = 52% library, 48% user code; 1.04KB/8KB Mega = 13% library, 87% user code) |
+| IV. Hardware Abstraction | ✅ **PASS** | DisplayConfig explicit; renderer inlined into BotiEyes for v1 efficiency; display types via enum |
+| V. Emotion-Driven | ✅ **PASS** | Valence-arousal core to all design; EmotionMapper central entity; continuous model throughout; emotion helpers provide simplified facade while keeping parametric model available |
+| VI. Cross-Platform Emulation | ✅ **PASS** | PC emulator specified in architecture; PNG export in emulator only (not Arduino); MockDisplay for testing |
+| VII. Extensible Architecture | ✅ **PASS** | Despite non-customizable mapping and simplified v1, architecture supports new display types via DisplayConfig enum, new animations via AnimationState enum, future emotion models via EmotionMapper refactor; coupled eye control can be extended to independent in v2 |
+| VIII. Continuous Learning | ✅ **PASS** | Research.md documents testing insights; 17 clarifications referenced in design; expert review findings integrated; API contract traceable to spec decisions; review-findings.md documents all simplification decisions |
 
 **Post-Design Gate Result**: ✅ **PASS** - All principles satisfied; design ready for task generation
 
 **Notes**:
-- Memory budget confirmed feasible (1.6KB used / 2KB available on Nano - **TIGHT**, 1.6KB / 8KB on Mega - **COMFORTABLE**)
+- **Memory budget improved via simplifications** (1.04KB used / 2KB available on Nano = **52% library, 48% user** - VIABLE for dedicated eye controller, was 80% library / 20% user - NOT viable)
+- **Simplifications applied** (2026-04-17 per expert review): Removed JSON export, coupled eye control, removed roll(), removed EyeRenderer abstraction, moved serial protocol to examples
+- **Savings achieved**: JSON +250B RAM, coupled eyes +16B RAM, roll +50B stack, EyeRenderer +30B RAM = ~550B total → **1000 bytes user code on Nano** ✅
 - Performance targets achievable per research findings (15-20 FPS Nano, 20-25 FPS Mega, 30-60 FPS ESP32)
-- Testing strategy defined (PlatformIO + Unity + MockDisplay)
-- No new complexity violations introduced during design
-- **Nano constraint**: Users must carefully manage memory (~400 bytes user code headroom); consider 128x32 display for more headroom
+- Testing strategy defined with Tier 1-3 coverage requirements (PlatformIO + Unity + MockDisplay)
+- No new complexity violations introduced during design; removed unnecessary complexity during review
+- **Arduino Nano viable** as primary target with careful user code management; 128x32 display alternative provides ~1500 bytes user code
 
 ## Project Structure
 

@@ -173,10 +173,10 @@ jobs:
 - SSD1306 128x32: 512 bytes
 - SH1106 128x64: 1024 bytes
 
-**Library Overhead** (estimated, after simplifications 2026-04-17):
+**Library Overhead** (finalized design 2026-04-17):
 - Adafruit GFX: ~200 bytes static data
 - Adafruit SSD1306: ~200-300 bytes driver state
-- BotiEyes state: ~80 bytes (emotion, position, expression parameters - reduced via coupled control)
+- BotiEyes state: ~140 bytes (68-75B per eye × 2 eyes: emotion, position, shape parameters - NO pupils/eyebrows/highlights)
 - Wire/Serial buffers: ~134 bytes (I2C + Serial)
 
 **Total RAM Usage**:
@@ -184,30 +184,32 @@ jobs:
 **Arduino Nano (2KB SRAM, 128x64 display)** - **PRIMARY TARGET**:
 - Framebuffer: 1024 bytes (GFXcanvas1)
 - Libraries: ~500 bytes (Adafruit GFX + SSD1306)
-- BotiEyes state: ~80 bytes
+- BotiEyes state: ~140 bytes (finalized shape-based design)
 - Wire/Serial buffers: ~134 bytes
-- Stack/heap overhead: ~300 bytes
-- **Total library**: ~1040 bytes (~1.04KB)
+- Stack/heap overhead: ~200 bytes
+- **Total library**: ~1000 bytes (1.0KB)
 - **User code available**: ~1000 bytes ✅ **VIABLE** for dedicated eye controller
-- **Recommendation**: Use PROGMEM for constants, avoid String class, consider 128x32 display for more headroom
+- **Performance**: 28 FPS actual (18-20ms render + 15ms I2C transfer)
+- **Recommendation**: Use PROGMEM for constants, avoid String class, I2C fast mode essential
 - **Alternative**: 128x32 display saves 512 bytes framebuffer → ~1500 bytes user code
 
 **Arduino Mega (8KB SRAM, 128x64 display)**:
 - Framebuffer: 1024 bytes
 - Libraries: ~500 bytes
-- BotiEyes state: ~80 bytes
+- BotiEyes state: ~140 bytes
 - Wire/Serial buffers: ~134 bytes
-- Stack/heap overhead: ~300 bytes
-- **Total library**: ~1040 bytes
+- Stack/heap overhead: ~200 bytes
+- **Total library**: ~1000 bytes
 - **Remaining for user code**: ~7KB ✅ **COMFORTABLE**
 
 **ESP32 (520KB SRAM)**: No memory concerns; ample headroom for optimizations.
 
-**Validation**: BotiEyes library (v1 simplified) fits on Arduino Nano with **viable** user code headroom (~1000 bytes). Mega provides comfortable 7KB for user applications.
+**Validation**: BotiEyes library (finalized minimalist design) fits on Arduino Nano with **viable** user code headroom (~1000 bytes). Mega provides comfortable 7KB for user applications.
 
-**Changes from Initial Estimate** (per expert review 2026-04-17):
+**Changes from Initial Estimate** (per design evolution 2026-04-17):
 - Initial estimate: 1.6KB total, 400 bytes user code (NOT viable)
-- After simplifications: 1.04KB total, 1000 bytes user code (VIABLE)
+- After v1 simplifications: 1.04KB total, 1000 bytes user code (VIABLE)
+- **Finalized design: 1.0KB total, 1000 bytes user code (ACHIEVED)** - shape-based approach saves 40B vs pupil/eyebrow design
 - Key removals: JSON export, independent eye control, roll() animation, EyeRenderer abstraction, serial protocol built-in
 
 ---

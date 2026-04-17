@@ -1,0 +1,68 @@
+# Arduino Build Artifacts
+*.hex
+*.elf
+*.bin
+*.o
+*.a
+*.so
+*.exe
+*.dll
+build/
+build-*/
+.build/
+
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+.clang_complete
+.gcc-flags.json
+lib_deps/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+dist/
+*.egg
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs and Temporary Files
+*.log
+*.tmp
+*.bak
+*.cache
+
+# Environment Variables
+.env
+.env.*
+
+# Test Coverage
+coverage/
+htmlcov/
+.coverage
+.pytest_cache/
+
+# Documentation Build
+docs/_build/
+*.pdf
+
+# OS-specific
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,61 @@
+#######################################
+# BotiEyes Library - Arduino IDE Keywords
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+BotiEyes	KEYWORD1
+DisplayConfig	KEYWORD1
+ErrorCode	KEYWORD1
+EmotionState	KEYWORD1
+EyePositionState	KEYWORD1
+ExpressionParameters	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+initialize	KEYWORD2
+validateConfig	KEYWORD2
+setEmotion	KEYWORD2
+getCurrentEmotion	KEYWORD2
+setEyePosition	KEYWORD2
+getEyePosition	KEYWORD2
+update	KEYWORD2
+blink	KEYWORD2
+wink	KEYWORD2
+enableIdleBehavior	KEYWORD2
+
+# Emotion Helpers
+happy	KEYWORD2
+sad	KEYWORD2
+angry	KEYWORD2
+calm	KEYWORD2
+excited	KEYWORD2
+tired	KEYWORD2
+surprised	KEYWORD2
+anxious	KEYWORD2
+content	KEYWORD2
+curious	KEYWORD2
+thinking	KEYWORD2
+confused	KEYWORD2
+
+# Position Helpers
+lookLeft	KEYWORD2
+lookRight	KEYWORD2
+lookUp	KEYWORD2
+lookDown	KEYWORD2
+neutral	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+OK	LITERAL1
+INVALID_INPUT	LITERAL1
+HARDWARE_ERROR	LITERAL1
+TIMEOUT	LITERAL1
+DISPLAY_NOT_FOUND	LITERAL1
+MEMORY_ERROR	LITERAL1

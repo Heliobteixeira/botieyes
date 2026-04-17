@@ -16,13 +16,13 @@
 
 **Purpose**: Project initialization and basic Arduino library structure
 
-- [ ] T001 Create Arduino library directory structure: BotiEyes/src/, BotiEyes/examples/, BotiEyes/ (root files)
-- [ ] T002 Create library.properties with metadata: name=BotiEyes, version=1.0.0, author, sentence, dependencies=Adafruit GFX Library
-- [ ] T003 [P] Create keywords.txt with Arduino IDE syntax highlighting for API methods
-- [ ] T004 [P] Create README.md with library overview, installation instructions, basic usage example
-- [ ] T005 [P] Create emulator/ directory structure: emulator/botieyes_emulator.py, emulator/emotion_mapper.py, emulator/eye_renderer.py, emulator/ui_controls.py
-- [ ] T006 [P] Create tests/ directory structure: tests/native/, tests/desktop/, tests/embedded/, tests/golden/
-- [ ] T007 Create .gitignore for Arduino build artifacts, Python __pycache__, PlatformIO .pio/
+- [X] T001 Create Arduino library directory structure: BotiEyes/src/, BotiEyes/examples/, BotiEyes/ (root files)
+- [X] T002 Create library.properties with metadata: name=BotiEyes, version=1.0.0, author, sentence, dependencies=Adafruit GFX Library
+- [X] T003 [P] Create keywords.txt with Arduino IDE syntax highlighting for API methods
+- [X] T004 [P] Create README.md with library overview, installation instructions, basic usage example
+- [X] T005 [P] Create emulator/ directory structure: emulator/botieyes_emulator.py, emulator/emotion_mapper.py, emulator/eye_renderer.py, emulator/ui_controls.py
+- [X] T006 [P] Create tests/ directory structure: tests/native/, tests/desktop/, tests/embedded/, tests/golden/
+- [X] T007 Create .gitignore for Arduino build artifacts, Python __pycache__, PlatformIO .pio/
 
 ---
 
@@ -32,19 +32,19 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T008 [P] Create DisplayConfig.h with enums (DisplayType, Protocol) and DisplayConfig struct in BotiEyes/src/
-- [ ] T009 [P] Create ErrorCode enum in BotiEyes/src/BotiEyes.h (OK, INVALID_INPUT, HARDWARE_ERROR, TIMEOUT, DISPLAY_NOT_FOUND, MEMORY_ERROR)
-- [ ] T010 [P] Create EmotionState.h with struct (currentValence, currentArousal, targetValence, targetArousal, startTime, duration) in BotiEyes/src/
-- [ ] T011 [P] Implement EmotionState.cpp with clamping (valence [-0.5, 0.5], arousal [0.0, 1.0]) in BotiEyes/src/
-- [ ] T012 [P] Create EyePositionState.h with struct (horizontal, vertical, targetH, targetV, startTime, duration) in BotiEyes/src/
-- [ ] T013 [P] Implement EyePositionState.cpp with angle clamping (H: -90 to +90, V: -45 to +45) in BotiEyes/src/
-- [ ] T014 [P] Create ExpressionParameters.h with struct (eyeWidth, eyeHeight, lidTopCoverage, lidBottomCoverage, yOffset, spacingAdjust, asymmetry) in BotiEyes/src/
-- [ ] T015 Create Interpolator.h with easeInOutCubic() function declaration in BotiEyes/src/
-- [ ] T016 Implement Interpolator.cpp with ease-in-out-cubic easing function in BotiEyes/src/
-- [ ] T017 Create EmotionMapper.h with mapEmotionToExpression(valence, arousal) → ExpressionParameters in BotiEyes/src/
-- [ ] T018 Implement EmotionMapper.cpp with shape-based mapping formulas (eyeWidth, eyeHeight, lid coverage, yOffset, spacing, asymmetry) per finalized design in BotiEyes/src/
-- [ ] T019 Implement custom drawEllipse() helper function in BotiEyes/src/ using Bresenham algorithm for eye shapes
-- [ ] T020 Implement drawEyelidOverlay() helper function in BotiEyes/src/ for top/bottom eyelid shapes using fillTriangle() or arc approximation
+- [X] T008 [P] Create DisplayConfig.h with enums (DisplayType, Protocol) and DisplayConfig struct in BotiEyes/src/
+- [X] T009 [P] Create ErrorCode enum in BotiEyes/src/BotiEyes.h (OK, INVALID_INPUT, HARDWARE_ERROR, TIMEOUT, DISPLAY_NOT_FOUND, MEMORY_ERROR)
+- [X] T010 [P] Create EmotionState.h with struct (currentValence, currentArousal, targetValence, targetArousal, startTime, duration) in BotiEyes/src/
+- [X] T011 [P] Implement EmotionState.cpp with clamping (valence [-0.5, 0.5], arousal [0.0, 1.0]) in BotiEyes/src/
+- [X] T012 [P] Create EyePositionState.h with struct (horizontal, vertical, targetH, targetV, startTime, duration) in BotiEyes/src/
+- [X] T013 [P] Implement EyePositionState.cpp with angle clamping (H: -90 to +90, V: -45 to +45) in BotiEyes/src/
+- [X] T014 [P] Create ExpressionParameters.h with struct (eyeWidth, eyeHeight, lidTopCoverage, lidBottomCoverage, yOffset, spacingAdjust, asymmetry) in BotiEyes/src/
+- [X] T015 Create Interpolator.h with easeInOutCubic() function declaration in BotiEyes/src/
+- [X] T016 Implement Interpolator.cpp with ease-in-out-cubic easing function in BotiEyes/src/
+- [X] T017 Create EmotionMapper.h with mapEmotionToExpression(valence, arousal) → ExpressionParameters in BotiEyes/src/
+- [X] T018 Implement EmotionMapper.cpp with shape-based mapping formulas (eyeWidth, eyeHeight, lid coverage, yOffset, spacing, asymmetry) per finalized design in BotiEyes/src/
+- [X] T019 Implement custom drawEllipse() helper function in BotiEyes/src/ using Bresenham algorithm for eye shapes
+- [X] T020 Implement drawEyelidOverlay() helper function in BotiEyes/src/ for top/bottom eyelid shapes using fillTriangle() or arc approximation
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -58,26 +58,26 @@
 
 ### Implementation for User Story 1
 
-- [ ] T021 [P] [US1] Create BotiEyes.h with class declaration, public API methods, private members in BotiEyes/src/
-- [ ] T022 [US1] Implement initialize(DisplayConfig) in BotiEyes.cpp with display initialization, framebuffer allocation, neutral expression (0.0, 0.5) in BotiEyes/src/
-- [ ] T023 [US1] Implement validateConfig(DisplayConfig) static method in BotiEyes.cpp with bounds checking (I2C address, SPI pins, dimensions) in BotiEyes/src/
-- [ ] T024 [US1] Implement setEmotion(valence, arousal, duration) in BotiEyes.cpp with input clamping, target setting, interpolation start in BotiEyes/src/
-- [ ] T025 [US1] Implement getCurrentEmotion(valence*, arousal*) in BotiEyes.cpp returning current interpolated values in BotiEyes/src/
-- [ ] T026 [P] [US1] Implement emotion helper happy(intensity) in BotiEyes.cpp mapping to valence +0.35, arousal 0.55 in BotiEyes/src/
-- [ ] T027 [P] [US1] Implement emotion helper sad(intensity) in BotiEyes.cpp mapping to valence -0.35, arousal 0.35 in BotiEyes/src/
-- [ ] T028 [P] [US1] Implement emotion helper angry(intensity) in BotiEyes.cpp mapping to valence -0.30, arousal 0.80 in BotiEyes/src/
-- [ ] T029 [P] [US1] Implement emotion helper calm(intensity) in BotiEyes.cpp mapping to valence 0.0, arousal 0.1 in BotiEyes/src/
-- [ ] T030 [P] [US1] Implement emotion helper excited(intensity) in BotiEyes.cpp mapping to valence +0.30, arousal 0.90 in BotiEyes/src/
-- [ ] T031 [P] [US1] Implement emotion helper tired(intensity) in BotiEyes.cpp mapping to valence +0.05, arousal 0.10 in BotiEyes/src/
-- [ ] T032 [P] [US1] Implement emotion helper surprised(intensity) in BotiEyes.cpp mapping to valence +0.15, arousal 0.85 in BotiEyes/src/
-- [ ] T033 [P] [US1] Implement emotion helper anxious(intensity) in BotiEyes.cpp mapping to valence -0.20, arousal 0.75 in BotiEyes/src/
-- [ ] T034 [P] [US1] Implement emotion helper content(intensity) in BotiEyes.cpp mapping to valence +0.25, arousal 0.40 in BotiEyes/src/
-- [ ] T035 [P] [US1] Implement emotion helper curious(intensity) in BotiEyes.cpp mapping to valence +0.15, arousal 0.60 in BotiEyes/src/
-- [ ] T036 [P] [US1] Implement emotion helper thinking(intensity) in BotiEyes.cpp mapping to valence 0.0, arousal 0.45, asymmetry -0.20 in BotiEyes/src/
-- [ ] T037 [P] [US1] Implement emotion helper confused(intensity) in BotiEyes.cpp mapping to valence -0.15, arousal 0.55, asymmetry -0.30 in BotiEyes/src/
-- [ ] T038 [US1] Implement update() method in BotiEyes.cpp with emotion interpolation, expression mapping, rendering in BotiEyes/src/
-- [ ] T039 [US1] Implement renderEyes() private method in BotiEyes.cpp drawing base ellipse + eyelid overlays per ExpressionParameters in BotiEyes/src/
-- [ ] T040 [US1] Create BasicEmotion.ino example in BotiEyes/examples/BasicEmotion/ demonstrating initialize(), emotion helpers, update() loop
+- [X] T021 [P] [US1] Create BotiEyes.h with class declaration, public API methods, private members in BotiEyes/src/
+- [X] T022 [US1] Implement initialize(DisplayConfig) in BotiEyes.cpp with display initialization, framebuffer allocation, neutral expression (0.0, 0.5) in BotiEyes/src/
+- [X] T023 [US1] Implement validateConfig(DisplayConfig) static method in BotiEyes.cpp with bounds checking (I2C address, SPI pins, dimensions) in BotiEyes/src/
+- [X] T024 [US1] Implement setEmotion(valence, arousal, duration) in BotiEyes.cpp with input clamping, target setting, interpolation start in BotiEyes/src/
+- [X] T025 [US1] Implement getCurrentEmotion(valence*, arousal*) in BotiEyes.cpp returning current interpolated values in BotiEyes/src/
+- [X] T026 [P] [US1] Implement emotion helper happy(intensity) in BotiEyes.cpp mapping to valence +0.35, arousal 0.55 in BotiEyes/src/
+- [X] T027 [P] [US1] Implement emotion helper sad(intensity) in BotiEyes.cpp mapping to valence -0.35, arousal 0.35 in BotiEyes/src/
+- [X] T028 [P] [US1] Implement emotion helper angry(intensity) in BotiEyes.cpp mapping to valence -0.30, arousal 0.80 in BotiEyes/src/
+- [X] T029 [P] [US1] Implement emotion helper calm(intensity) in BotiEyes.cpp mapping to valence 0.0, arousal 0.1 in BotiEyes/src/
+- [X] T030 [P] [US1] Implement emotion helper excited(intensity) in BotiEyes.cpp mapping to valence +0.30, arousal 0.90 in BotiEyes/src/
+- [X] T031 [P] [US1] Implement emotion helper tired(intensity) in BotiEyes.cpp mapping to valence +0.05, arousal 0.10 in BotiEyes/src/
+- [X] T032 [P] [US1] Implement emotion helper surprised(intensity) in BotiEyes.cpp mapping to valence +0.15, arousal 0.85 in BotiEyes/src/
+- [X] T033 [P] [US1] Implement emotion helper anxious(intensity) in BotiEyes.cpp mapping to valence -0.20, arousal 0.75 in BotiEyes/src/
+- [X] T034 [P] [US1] Implement emotion helper content(intensity) in BotiEyes.cpp mapping to valence +0.25, arousal 0.40 in BotiEyes/src/
+- [X] T035 [P] [US1] Implement emotion helper curious(intensity) in BotiEyes.cpp mapping to valence +0.15, arousal 0.60 in BotiEyes/src/
+- [X] T036 [P] [US1] Implement emotion helper thinking(intensity) in BotiEyes.cpp mapping to valence 0.0, arousal 0.45, asymmetry -0.20 in BotiEyes/src/
+- [X] T037 [P] [US1] Implement emotion helper confused(intensity) in BotiEyes.cpp mapping to valence -0.15, arousal 0.55, asymmetry -0.30 in BotiEyes/src/
+- [X] T038 [US1] Implement update() method in BotiEyes.cpp with emotion interpolation, expression mapping, rendering in BotiEyes/src/
+- [X] T039 [US1] Implement renderEyes() private method in BotiEyes.cpp drawing base ellipse + eyelid overlays per ExpressionParameters in BotiEyes/src/
+- [X] T040 [US1] Create BasicEmotion.ino example in BotiEyes/examples/BasicEmotion/ demonstrating initialize(), emotion helpers, update() loop
 
 **Checkpoint**: User Story 1 complete - parametric emotion control fully functional and testable independently
 

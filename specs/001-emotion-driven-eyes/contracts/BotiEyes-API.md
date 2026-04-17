@@ -21,20 +21,29 @@ class BotiEyes {
 public:
     // Initialization
     ErrorCode initialize(const DisplayConfig& config);
+    static ErrorCode validateConfig(const DisplayConfig& config); // Validate before init
     
-    // Emotion Control (Q12: Per-call duration parameter)
+    // Emotion Control (parametric, Q6)
     ErrorCode setEmotion(float valence, float arousal, uint16_t duration_ms = 400);
-    ErrorCode getCurrentEmotion(float* valence, float* arousal);
+    void getCurrentEmotion(float* valence, float* arousal);
     
-    // Eye Position Control (Q15: Fixed 300ms interpolation)
-    ErrorCode setEyePosition(int16_t leftH, int16_t leftV, 
-                            int16_t rightH, int16_t rightV);
-    ErrorCode getEyePosition(int16_t* leftH, int16_t* leftV,
-                             int16_t* rightH, int16_t* rightV);
+    // Emotion Helpers (simplified facade for common emotions)
+    ErrorCode happy(float intensity = 1.0);
+    ErrorCode sad(float intensity = 1.0);
+    ErrorCode angry(float intensity = 1.0);
+    ErrorCode calm(float intensity = 1.0);
+    ErrorCode excited(float intensity = 1.0);
+    ErrorCode tired(float intensity = 1.0);
+    ErrorCode surprised(float intensity = 1.0);
+    ErrorCode anxious(float intensity = 1.0);
+    ErrorCode content(float intensity = 1.0);
+    ErrorCode curious(float intensity = 1.0);
+    
+    // Eye Position Control (coupled, both eyes move together)
+    ErrorCode setEyePosition(int16_t h, int16_t v, uint16_t duration_ms = 300);
+    void getEyePosition(int16_t* h, int16_t* v);
     
     // Predefined Eye Behaviors
-    ErrorCode converge();
-    ErrorCode diverge();
     ErrorCode lookLeft();
     ErrorCode lookRight();
     ErrorCode lookUp();
@@ -44,18 +53,24 @@ public:
     // Animations (Q14: Interrupt immediately)
     ErrorCode blink(uint16_t duration_ms = 150);
     ErrorCode wink(EyeSide eye, uint16_t duration_ms = 150);
-    ErrorCode roll(RollDirection direction, uint8_t speed = 128);
     
     // Frame Update (Q13: Must call at target FPS)
     ErrorCode update();
-    
-    // State Inspection (Q11: No debug output, use JSON)
-    String getExpressionState(); // Returns JSON
     
 private:
     // Implementation hidden
 };
 ```
+
+**Key Changes from Review**:
+- ❌ Removed `getExpressionState()` - JSON export only in PC emulator, not Arduino
+- ❌ Removed `roll()` animation - defer to v2
+- ❌ Removed `converge()`, `diverge()` - not needed with coupled eye control
+- ✅ Simplified `setEyePosition()` - 2 params (h, v) + configurable duration
+- ✅ Simplified `getEyePosition()` - 2 params (h, v)
+- ✅ Added emotion helper methods - facade for common emotions
+- ✅ Added `validateConfig()` - bounds checking before init
+- ✅ Fixed error handling - getters now `void` (cannot fail)
 
 ---
 
@@ -89,6 +104,13 @@ DisplayConfig config = {
     .height = 64
 };
 
+// Validate config before initialization
+ErrorCode validation = BotiEyes::validateConfig(config);
+if (validation != OK) {
+    Serial.println("Invalid config!");
+    return;
+}
+
 BotiEyes eyes;
 ErrorCode result = eyes.initialize(config);
 if (result != OK) {
@@ -99,6 +121,39 @@ if (result != OK) {
 **Constraints**:
 - Must be called before any other API methods
 - Can only be called once (re-init not supported)
+
+---
+
+### `validateConfig(const DisplayConfig& config)`
+
+**Purpose**: Validate display configuration before initialization (added per review).
+
+**Parameters**:
+- `config`: Display configuration to validate
+
+**Returns**:
+- `ErrorCode::OK`: Configuration valid
+- `ErrorCode::INVALID_INPUT`: Invalid type, protocol, or pin values
+
+**Behavior**:
+- Checks I2C address (0x3C, 0x3D valid)
+- Checks SPI pins (CS, DC, Reset >= -1)
+- Checks display dimensions match type
+- Static method, can call before object creation
+
+**Example**:
+```cpp
+DisplayConfig config = {
+    .type = DISPLAY_SSD1306_128x64,
+    .protocol = PROTOCOL_I2C,
+    .i2cAddress = 0xFF,  // Invalid!
+    .width = 128,
+    .height = 64
+};
+
+if (BotiEyes::validateConfig(config) != OK) {
+    Serial.println("Fix I2C address (use 0x3C or 0x3D)");
+}
 
 ---
 
@@ -148,9 +203,7 @@ eyes.setEmotion(-0.2, 0.75, 300);
 - `valence`: Output pointer for current valence
 - `arousal`: Output pointer for current arousal
 
-**Returns**:
-- `ErrorCode::OK`: Values written to pointers
-- `ErrorCode::INVALID_INPUT`: Null pointers
+**Returns**: None (`void`) - cannot fail, always succeeds (fixed per review)
 
 **Example**:
 ```cpp
@@ -162,70 +215,124 @@ Serial.print("Arousal: "); Serial.println(a);
 
 ---
 
-### `setEyePosition(int16_t leftH, int16_t leftV, int16_t rightH, int16_t rightV)`
+### Emotion Helper Methods
 
-**Purpose**: Set independent 2D eye positions with smooth interpolation.
+**Purpose**: Simplified facade for common emotions (added per review to reduce cognitive friction).
+
+All helper methods map to predefined valence-arousal coordinates with configurable intensity.
+
+```cpp
+ErrorCode happy(float intensity = 1.0);      // Positive valence, moderate arousal
+ErrorCode sad(float intensity = 1.0);        // Negative valence, low arousal
+ErrorCode angry(float intensity = 1.0);      // Negative valence, high arousal
+ErrorCode calm(float intensity = 1.0);       // Low positive valence, very low arousal
+ErrorCode excited(float intensity = 1.0);    // Positive valence, very high arousal
+ErrorCode tired(float intensity = 1.0);      // Low valence, very low arousal
+ErrorCode surprised(float intensity = 1.0);  // Low positive valence, high arousal
+ErrorCode anxious(float intensity = 1.0);    // Negative valence, high arousal
+ErrorCode content(float intensity = 1.0);    // Moderate positive valence, moderate arousal
+ErrorCode curious(float intensity = 1.0);    // Low positive valence, moderate-high arousal
+```
 
 **Parameters**:
-- `leftH`: Left eye horizontal angle, -90° (full left) to +90° (full right)
-- `leftV`: Left eye vertical angle, -45° (down) to +45° (up)
-- `rightH`: Right eye horizontal angle, -90° to +90°
-- `rightV`: Right eye vertical angle, -45° to +45°
+- `intensity`: Emotion strength, 0.0 (subtle) to 1.0 (full), default 1.0
+
+**Returns**:
+- `ErrorCode::OK`: Emotion set successfully
+- `ErrorCode::INVALID_INPUT`: Intensity out of [0.0, 1.0] range
+
+**Mapping**:
+```cpp
+happy(intensity)     → setEmotion(0.35 * intensity, 0.55, 400)
+sad(intensity)       → setEmotion(-0.35 * intensity, 0.35, 400)
+angry(intensity)     → setEmotion(-0.30 * intensity, 0.80, 400)
+calm(intensity)      → setEmotion(0.20 * intensity, 0.25, 400)
+excited(intensity)   → setEmotion(0.30 * intensity, 0.90, 400)
+tired(intensity)     → setEmotion(0.05 * intensity, 0.10, 400)
+surprised(intensity) → setEmotion(0.15 * intensity, 0.85, 400)
+anxious(intensity)   → setEmotion(-0.20 * intensity, 0.75, 400)
+content(intensity)   → setEmotion(0.25 * intensity, 0.40, 400)
+curious(intensity)   → setEmotion(0.15 * intensity, 0.60, 400)
+```
+
+**Example**:
+```cpp
+eyes.happy();           // Full happy expression (intensity = 1.0)
+eyes.happy(0.5);        // Subtle happy (half intensity)
+eyes.sad();             // Sad expression
+eyes.excited(0.8);      // Very excited
+eyes.calm();            // Calm and peaceful
+
+// Advanced users can still use parametric model directly
+eyes.setEmotion(0.42, 0.73, 600);  // Custom emotion
+```
+
+**Note**: These are convenience wrappers. Advanced users requiring AI integration can still use `setEmotion()` directly with continuous valence-arousal values.
+
+---
+
+### `setEyePosition(int16_t h, int16_t v, uint16_t duration_ms = 300)`
+
+**Purpose**: Set coupled 2D eye positions (both eyes move together) with smooth interpolation.
+
+**Parameters**:
+- `h`: Horizontal angle, -90° (full left) to +90° (full right), both eyes
+- `v`: Vertical angle, -45° (down) to +45° (up), both eyes
+- `duration_ms`: Transition duration in milliseconds, default 300ms (fixed per review)
 
 **Returns**:
 - `ErrorCode::OK`: Position set successfully
 - `ErrorCode::INVALID_INPUT`: Angles out of bounds
 
-**Behavior** (Q10, Q15 clarifications):
-- Eyes smoothly interpolate to new position over **fixed 300ms duration**
+**Behavior** (Q10, simplified per review):
+- Both eyes smoothly interpolate to new position over `duration_ms`
 - **Independent from emotion** - both apply simultaneously
 - Uses ease-in-out-cubic easing
+- **Simplified from independent control** - v1 uses coupled movement only
 
 **Example**:
 ```cpp
-// Eyes converge (look inward)
-eyes.setEyePosition(-30, 0, 30, 0);
-
-// Left eye looks left-up, right eye looks right-down
-eyes.setEyePosition(-45, 20, 45, -20);
-
 // Both eyes look up
-eyes.setEyePosition(0, 30, 0, 30);
+eyes.setEyePosition(0, 30);
+
+// Both eyes look left-up with slow transition
+eyes.setEyePosition(-45, 20, 500);
+
+// Both eyes center
+eyes.setEyePosition(0, 0);
 ```
 
 **Constraints**:
 - Horizontal angles clamped to [-90, 90]
 - Vertical angles clamped to [-45, 45]
-- Interpolation duration is fixed (300ms, not configurable per Q15)
+- Interpolation duration configurable (fixed API inconsistency per review)
 
 ---
 
-### `getEyePosition(int16_t* leftH, int16_t* leftV, int16_t* rightH, int16_t* rightV)`
+### `getEyePosition(int16_t* h, int16_t* v)`
 
 **Purpose**: Query current eye positions (mid-interpolation if transitioning).
 
-**Parameters**: Output pointers for current angles
+**Parameters**: 
+- `h`: Output pointer for current horizontal angle (both eyes)
+- `v`: Output pointer for current vertical angle (both eyes)
 
-**Returns**:
-- `ErrorCode::OK`: Values written to pointers
-- `ErrorCode::INVALID_INPUT`: Null pointers
+**Returns**: None (`void`) - cannot fail, always succeeds (fixed per review)
 
 **Example**:
 ```cpp
-int16_t lh, lv, rh, rv;
-eyes.getEyePosition(&lh, &lv, &rh, &rv);
-Serial.print("Left: ("); Serial.print(lh); Serial.print(", "); Serial.print(lv); Serial.println(")");
+int16_t h, v;
+eyes.getEyePosition(&h, &v);
+Serial.print("Position: ("); Serial.print(h); Serial.print(", "); Serial.print(v); Serial.println(")");
 ```
 
 ---
 
 ### Predefined Eye Behaviors
 
-Convenience methods for common gaze patterns.
+Convenience methods for common gaze patterns (simplified per review).
 
 ```cpp
-ErrorCode converge();   // Both eyes look inward (cross-eyed)
-ErrorCode diverge();    // Both eyes look outward (wall-eyed)
 ErrorCode lookLeft();   // Both eyes → (-45°, 0°)
 ErrorCode lookRight();  // Both eyes → (+45°, 0°)
 ErrorCode lookUp();     // Both eyes → (0°, +30°)
@@ -235,13 +342,17 @@ ErrorCode neutral();    // Both eyes → (0°, 0°)
 
 All use 300ms interpolation (same as `setEyePosition()`).
 
+**Removed** (per review simplification):
+- ❌ `converge()` - Not needed with coupled eye control
+- ❌ `diverge()` - Not needed with coupled eye control
+
 **Example**:
 ```cpp
 eyes.neutral();    // Center gaze
 delay(1000);
 eyes.lookLeft();   // Look left
 delay(1000);
-eyes.converge();   // Cross eyes
+eyes.lookUp();     // Look up
 ```
 
 ---
@@ -289,30 +400,7 @@ eyes.blink(300);    // Slow blink (300ms)
 eyes.wink(EYE_RIGHT, 200);
 ```
 
----
-
-### `roll(RollDirection direction, uint8_t speed = 128)`
-
-**Purpose**: Roll eyes in circular motion.
-
-**Parameters**:
-- `direction`: `ROLL_CW` (clockwise) or `ROLL_CCW` (counter-clockwise)
-- `speed`: 0 (very slow) to 255 (very fast), default 128
-
-**Returns**:
-- `ErrorCode::OK`: Animation started
-
-**Behavior**:
-- Eyes trace circular path
-- Speed determines angular velocity
-- Animation continues until interrupted
-
-**Example**:
-```cpp
-eyes.roll(ROLL_CW, 200);     // Fast clockwise roll
-delay(1000);
-eyes.neutral();              // Stop rolling
-```
+**Note**: `roll()` animation removed per review (deferred to v2).
 
 ---
 
@@ -358,90 +446,47 @@ void loop() {
 
 ---
 
-### `getExpressionState()`
+## Removed Features (Per Review Decisions)
 
-**Purpose**: Serialize current state to JSON for debugging/AI feedback.
+### JSON State Export (`getExpressionState()`)
 
-**Returns**: JSON string with complete state
+**Status**: ❌ Removed from Arduino library (available in PC emulator only)
 
-**Example Output**:
-```json
-{
-  "emotion": {
-    "valence": 0.3,
-    "arousal": 0.6
-  },
-  "position": {
-    "leftH": -30,
-    "leftV": 0,
-    "rightH": 30,
-    "rightV": 0
-  },
-  "expression": {
-    "pupilDilation": 0.68,
-    "eyelidOpenness": 0.76,
-    "browAngle": 0.6
-  },
-  "animation": {
-    "active": false,
-    "type": "none"
-  }
-}
-```
+**Rationale**:
+- String class causes 250 bytes RAM heap fragmentation on Arduino
+- JSON export unclear use case for embedded context
+- PC emulator still supports JSON for AI integration testing
 
-**Example**:
-```cpp
-String state = eyes.getExpressionState();
-Serial.println(state);  // Send to AI for analysis
-```
+**Alternative**: Use `getCurrentEmotion()` and `getEyePosition()` for lightweight state queries
 
 ---
 
-## Serial Protocol
+### Serial Protocol
 
-**Purpose**: Enable AI control over serial connection (115200 baud).
+**Status**: ❌ Removed from library core (moved to example sketch)
 
-### Command Format
+**Rationale**:
+- Coupling library to Serial reduces flexibility
+- Users may need custom protocols (I2C, Bluetooth, etc.)
+- Example implementation clearer than built-in protocol
 
-**Emotion Control**:
+**Reference**: See `examples/SerialControl/SerialControl.ino` for reference implementation
+
+**Example Protocol** (from example sketch):
 ```
 EMO:valence,arousal[,duration]
-```
-Example: `EMO:0.3,0.6` or `EMO:0.3,0.6,500`
+EMO:0.3,0.6
+EMO:0.3,0.6,500
 
-**Position Control**:
-```
-POS:leftH,leftV,rightH,rightV
-```
-Example: `POS:-30,0,30,0`
+POS:h,v[,duration]
+POS:-30,15
+POS:-30,15,400
 
-**Query State**:
-```
-QUERY
-```
-Response: JSON from `getExpressionState()`
+QUERY  → responds with state over Serial
 
-**Error Handling** (Q9 clarification):
-Invalid commands return:
-```
-ERROR:INVALID_COMMAND
-ERROR:PARSE_FAILED
-ERROR:OUT_OF_BOUNDS
-```
-
-**Example Serial Session**:
-```
->> EMO:0.3,0.8
-<< OK
-
->> POS:0,30,0,30
-<< OK
-
->> QUERY
-<< {"emotion":{"valence":0.3,"arousal":0.8},...}
-
->> EMO:invalid
-<< ERROR:PARSE_FAILED
+HAPPY[,intensity]
+SAD[,intensity]
+...other emotion helpers...
 ```
 
 ---
@@ -463,10 +508,7 @@ enum EyeSide {
     EYE_RIGHT
 };
 
-enum RollDirection {
-    ROLL_CW,    // Clockwise
-    ROLL_CCW    // Counter-clockwise
-};
+// RollDirection removed (roll() animation deferred to v2)
 
 enum DisplayType {
     DISPLAY_SSD1306_128x64,
@@ -477,8 +519,8 @@ enum DisplayType {
 
 enum DisplayProtocol {
     PROTOCOL_I2C,
-    PROTOCOL_SPI_HW,
-    PROTOCOL_SPI_SW
+    PROTOCOL_SPI_HW,      // Hardware SPI
+    PROTOCOL_SPI_SW       // Software SPI
 };
 ```
 
@@ -510,10 +552,22 @@ struct DisplayConfig {
 ## Memory Constraints
 
 - **Static allocation only** (Q8 clarification) - no `malloc`/`new`
-- **Arduino Nano**: Library uses ~1.6KB RAM (including 1KB framebuffer) → **~400 bytes left for user code** ⚠️ **CRITICAL**
-  - **Recommendation**: Minimize global variables, use `const` and `PROGMEM` for strings/tables, consider 128x32 display
-- Arduino Mega: Library uses ~1.6KB RAM → 6.4KB available for user code
-- ESP32: No significant constraints
+- **Arduino Nano** (2KB SRAM): 
+  - Library: ~1.04KB (state 80 bytes + framebuffer 1024 bytes + stack/buffers ~400 bytes)
+  - **User code: ~1000 bytes** ✅ **VIABLE** for dedicated eye controller (after review simplifications)
+  - **Recommendations**: Use `const` and `PROGMEM` for strings/tables, avoid String class
+  - **Alternative**: Use 128x32 display (512 bytes framebuffer → ~1500 bytes user code)
+- **Arduino Mega** (8KB SRAM):
+  - Library: ~1.04KB
+  - **User code: ~7KB** ✅ **COMFORTABLE** - Ample headroom
+- **ESP32** (520KB SRAM): No significant constraints
+
+**Key Improvements** (per review decisions):
+- ❌ Removed JSON export: +250 bytes RAM
+- ❌ Removed independent eye control: +16 bytes RAM
+- ❌ Removed roll() animation: +50 bytes stack
+- ❌ Simplified rendering: +100 bytes stack
+- **Net result**: Nano now viable with ~1000 bytes user code (was 400 bytes - not viable)
 
 ---
 
@@ -545,14 +599,21 @@ void setup() {
         .height = 64
     };
     
+    // Validate config (added per review)
+    if (BotiEyes::validateConfig(config) != OK) {
+        Serial.println("Invalid config!");
+        while(1);
+    }
+    
     // Initialize (shows neutral expression)
     if (eyes.initialize(config) != OK) {
         Serial.println("Init failed!");
         while(1);
     }
     
-    // Set happy emotion
-    eyes.setEmotion(0.3, 0.6, 500);
+    // Set happy emotion (can use helper or parametric model)
+    eyes.happy();                     // Using emotion helper
+    // eyes.setEmotion(0.3, 0.6, 500); // Or use parametric model directly
 }
 
 void loop() {
@@ -561,7 +622,7 @@ void loop() {
     // Update and render
     eyes.update();
     
-    // Maintain 30 FPS
+    // Maintain 30 FPS (15 FPS on Nano)
     unsigned long elapsed = millis() - frameStart;
     if (elapsed < 33) {
         delay(33 - elapsed);
@@ -573,7 +634,11 @@ void loop() {
 
 ## Version History
 
-- **1.0.0** (2026-04-17): Initial API contract based on 17 clarifications
+- **1.0.0** (2026-04-17): Initial API contract
+  - **Review changes applied**: Removed JSON export, roll() animation, independent eye control
+  - **Simplifications**: Coupled eye movement, emotion helper methods, config validation
+  - **API fixes**: Duration parameter consistency, getter return types (void), error handling verbosity
+  - **Memory**: Nano viable with ~1000 bytes user code (was 400 bytes)
 
 ---
 

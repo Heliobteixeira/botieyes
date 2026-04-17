@@ -46,44 +46,38 @@ struct EmotionState {
 
 ### 2. EyePositionState
 
-**Purpose**: Represents independent 2D position for left and right eyes with smooth interpolation.
+**Purpose**: Represents coupled 2D position for both eyes (simplified from independent control per review decisions).
 
 **Fields**:
 ```cpp
 struct EyePositionState {
-    // Current positions (degrees)
-    int16_t leftHorizontal;   // -90° (full left) to +90° (full right)
-    int16_t leftVertical;     // -45° (down) to +45° (up)
-    int16_t rightHorizontal;  // -90° to +90°
-    int16_t rightVertical;    // -45° to +45°
+    // Current position (both eyes move together)
+    int16_t horizontal;       // -90° (full left) to +90° (full right)
+    int16_t vertical;         // -45° (down) to +45° (up)
     
     // Target positions for interpolation
-    int16_t targetLeftH;
-    int16_t targetLeftV;
-    int16_t targetRightH;
-    int16_t targetRightV;
+    int16_t targetH;
+    int16_t targetV;
     
     // Interpolation state
     uint32_t startTime;       // Interpolation start (millis())
-    uint16_t duration;        // Fixed 300ms transition
+    uint16_t duration;        // Transition duration (default 300ms, configurable per review decision)
 };
 ```
 
 **Invariants**:
-- All horizontal angles ∈ [-90, 90] degrees
-- All vertical angles ∈ [-45, 45] degrees
-- `duration` = 300ms (fixed, per Q15 clarification)
+- Horizontal angle ∈ [-90, 90] degrees
+- Vertical angle ∈ [-45, 45] degrees
+- `duration` ≥ 0 (0 = instant transition, configurable per API fix)
 
 **Predefined Behaviors** (convenience methods):
-- `converge()`: Both eyes → (0°, 0°) with slight inward angle
-- `diverge()`: Eyes → opposite horizontal extremes
 - `lookLeft()`: Both eyes → (-45°, 0°)
 - `lookRight()`: Both eyes → (+45°, 0°)
 - `lookUp()`: Both eyes → (0°, +30°)
 - `lookDown()`: Both eyes → (0°, -30°)
 - `neutral()`: Both eyes → (0°, 0°)
 
-**Memory**: 20 bytes (8 int16 + 1 uint32 + 1 uint16)
+**Memory**: 12 bytes (4 int16 + 1 uint32 + 1 uint16)
 
 ---
 
@@ -99,11 +93,9 @@ struct ExpressionParameters {
     float browAngle;          // -1.0 (sad/angry) to +1.0 (happy/surprised)
     float eyeSquint;          // 0.0 (none) to 1.0 (full squint) - affects eyelid curve
     
-    // Computed from EyePositionState (for rendering)
-    int16_t leftPupilOffsetX; // Horizontal offset from center (pixels)
-    int16_t leftPupilOffsetY; // Vertical offset from center (pixels)
-    int16_t rightPupilOffsetX;
-    int16_t rightPupilOffsetY;
+    // Computed from EyePositionState (for rendering, coupled for both eyes)
+    int16_t pupilOffsetX;     // Horizontal offset from center (pixels, both eyes)
+    int16_t pupilOffsetY;     // Vertical offset from center (pixels, both eyes)
 };
 ```
 
@@ -119,13 +111,13 @@ eyeSquint = max(0, (0.5 - arousal) × 0.4) if valence < 0 else 0
 - All float values ∈ [0.0, 1.0] except `browAngle` ∈ [-1.0, 1.0]
 - Pupil offsets calculated from eye position angles (see GeometryHelper)
 
-**Memory**: 32 bytes (8 floats)
+**Memory**: 24 bytes (4 floats + 2 int16) - reduced from 32 bytes via coupled control
 
 ---
 
 ### 4. AnimationState
 
-**Purpose**: Tracks currently executing animation (blink, wink, roll) with interrupt-on-new behavior.
+**Purpose**: Track active animation (blink, wink) with progress.
 
 **Fields**:
 ```cpp
@@ -133,9 +125,7 @@ enum AnimationType {
     ANIM_NONE = 0,
     ANIM_BLINK,
     ANIM_WINK_LEFT,
-    ANIM_WINK_RIGHT,
-    ANIM_ROLL_CW,
-    ANIM_ROLL_CCW
+    ANIM_WINK_RIGHT
 };
 
 struct AnimationState {
@@ -295,11 +285,11 @@ enum ErrorCode {
 
 **Total Core State** (per BotiEyes instance):
 - EmotionState: 20 bytes
-- EyePositionState: 20 bytes
-- ExpressionParameters: 32 bytes
+- EyePositionState: 12 bytes (reduced from 20 - coupled control)
+- ExpressionParameters: 24 bytes (reduced from 32 - coupled control)
 - AnimationState: 12 bytes
 - DisplayConfig: 12 bytes
-- **Subtotal**: 96 bytes
+- **Subtotal**: 80 bytes (down from 96 bytes via simplifications)
 
 **Display Framebuffer** (external, Adafruit GFX):
 - 128×64 monochrome: 1024 bytes (1KB)
@@ -313,19 +303,21 @@ enum ErrorCode {
 - **Total code**: ~5KB
 
 **Arduino Nano Budget Check** (2KB SRAM, PRIMARY TARGET):
-- Library state: 96 bytes
+- Library state: 80 bytes (reduced via coupled eye control, simplified features)
 - Framebuffer (128x64): 1024 bytes
-- Library stack/heap: ~500 bytes
-- **Used**: ~1.6KB
-- **Remaining for user**: ~400 bytes ⚠️ **CRITICAL** - Very tight constraint
-- **Alternative**: Use 128x32 display (512 bytes framebuffer → ~900 bytes user code)
+- Library stack/heap: ~400 bytes (reduced - no JSON export, no roll(), simpler rendering)
+- Wire/Serial buffers: 134 bytes
+- **Used**: ~1.04KB
+- **Remaining for user**: ~1000 bytes ✅ **VIABLE** - Sufficient for dedicated eye controller
+- **Alternative**: Use 128x32 display (512 bytes framebuffer → ~1500 bytes user code)
 
 **Arduino Mega Budget Check** (8KB SRAM):
-- Library state: 96 bytes
+- Library state: 80 bytes
 - Framebuffer: 1024 bytes
-- Library stack/heap: ~500 bytes
-- **Used**: ~1.6KB
-- **Remaining for user**: ~6.4KB ✅ **COMFORTABLE** - Ample headroom
+- Library stack/heap: ~400 bytes
+- Wire/Serial buffers: 134 bytes
+- **Used**: ~1.04KB
+- **Remaining for user**: ~7KB ✅ **COMFORTABLE** - Ample headroom
 
 ---
 

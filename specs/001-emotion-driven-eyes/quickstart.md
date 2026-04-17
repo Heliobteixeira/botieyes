@@ -28,9 +28,9 @@ BotiEyes is a parametric emotion-driven eye animation library for OLED displays.
 ### PlatformIO
 
 ```ini
-[env:mega2560]
+[env:nanoatmega328]
 platform = atmelavr
-board = megaatmega2560
+board = nanoatmega328
 framework = arduino
 lib_deps =
     BotiEyes
@@ -43,18 +43,18 @@ lib_deps =
 
 ### Required Components
 
-- **Microcontroller**: Arduino Mega 2560 or ESP32
-- **Display**: Monochrome OLED (SSD1306 or SH1106), 128x64 pixels recommended
-- **Connection**: I2C (SCL/SDA) or SPI
+- **Microcontroller**: Arduino Nano (recommended), Arduino Mega 2560, or ESP32
+- **Display**: Monochrome OLED (SSD1306 or SH1106), 128x64 pixels (or 128x32 for tighter Nano memory)
+- **Connection**: I2C (SCL/SDA) recommended for Nano (saves pins)
 
 ### Wiring (I2C)
 
-| OLED Pin | Arduino Mega | ESP32 |
-|----------|--------------|-------|
-| VCC | 5V | 3.3V |
-| GND | GND | GND |
-| SCL | Pin 21 (SCL) | GPIO 22 (SCL) |
-| SDA | Pin 20 (SDA) | GPIO 21 (SDA) |
+| OLED Pin | Arduino Nano | Arduino Mega | ESP32 |
+|----------|--------------|--------------|-------|
+| VCC | 5V | 5V | 3.3V |
+| GND | GND | GND | GND |
+| SCL | A5 (SCL) | Pin 21 (SCL) | GPIO 22 (SCL) |
+| SDA | A4 (SDA) | Pin 20 (SDA) | GPIO 21 (SDA) |
 
 **I2C Address**: Usually `0x3C` or `0x3D` (check your display documentation)
 
@@ -289,6 +289,41 @@ python botieyes_emulator.py
 
 ## Performance Tips
 
+### Arduino Nano (15-20 FPS Target) ⚠️ **TIGHT MEMORY**
+
+1. **Enable I2C Fast Mode** (400kHz) - **CRITICAL**:
+   ```cpp
+   Wire.setClock(400000);  // Before eyes.initialize()
+   ```
+
+2. **Minimize Memory Usage**:
+   ```cpp
+   // BAD: Uses RAM
+   String message = "Hello";
+   
+   // GOOD: Uses Flash (PROGMEM)
+   const char message[] PROGMEM = "Hello";
+   ```
+
+3. **Adjust Frame Rate**:
+   ```cpp
+   delay(50);  // 20 FPS (achievable with I2C fast mode)
+   ```
+
+4. **Monitor Memory** (critical on Nano):
+   ```cpp
+   Serial.print("Free RAM: ");
+   Serial.println(freeMemory());  // Should be >100 bytes minimum
+   ```
+
+5. **Consider Smaller Display** (saves 512 bytes):
+   ```cpp
+   // 128x32 instead of 128x64
+   .type = DISPLAY_SSD1306_128x32,
+   .width = 128,
+   .height = 32
+   ```
+
 ### Arduino Mega (20-25 FPS Target)
 
 1. **Enable I2C Fast Mode** (400kHz):
@@ -299,12 +334,6 @@ python botieyes_emulator.py
 2. **Adjust Frame Rate**:
    ```cpp
    delay(40);  // 25 FPS (slower but smoother on Mega)
-   ```
-
-3. **Monitor Memory**:
-   ```cpp
-   Serial.print("Free RAM: ");
-   Serial.println(freeMemory());
    ```
 
 ### ESP32 (30-60 FPS)
@@ -323,9 +352,17 @@ delay(16);  // 60 FPS (ESP32 easily handles this)
 - **Check display type**: Verify SSD1306 vs SH1106 in config
 
 ### Slow/Choppy Animation
-- **Mega**: Enable I2C fast mode (`Wire.setClock(400000)`)
+- **Nano/Mega**: Enable I2C fast mode (`Wire.setClock(400000)`) - **CRITICAL**
 - **Frame rate**: Ensure `delay()` matches target FPS
-- **Memory**: Check if RAM is running low
+- **Memory**: Check if RAM is running low (especially Nano)
+
+### Random Crashes or Glitches (Nano)
+- **Out of memory**: Library uses ~1.6KB, only ~400 bytes left
+- **Solutions**:
+  - Move strings to PROGMEM: `const char[] PROGMEM`
+  - Reduce global variables
+  - Use 128x32 display (saves 512 bytes)
+  - Upgrade to Mega (8KB RAM)
 
 ### Eyes Look Wrong
 - **Calibration**: Emotion values are subjective; adjust to taste

@@ -2,7 +2,7 @@
 
 **Version**: 1.0.0  
 **Date**: 2026-04-17  
-**Target Platforms**: Arduino Mega 2560, ESP32, PC Emulator (Python)
+**Target Platforms**: Arduino Nano (primary), Arduino Mega 2560, ESP32, PC Emulator (Python)
 
 ## Overview
 
@@ -510,13 +510,16 @@ struct DisplayConfig {
 ## Memory Constraints
 
 - **Static allocation only** (Q8 clarification) - no `malloc`/`new`
-- Arduino Mega: Library uses ~1.6KB RAM (including 1KB framebuffer)
+- **Arduino Nano**: Library uses ~1.6KB RAM (including 1KB framebuffer) → **~400 bytes left for user code** ⚠️ **CRITICAL**
+  - **Recommendation**: Minimize global variables, use `const` and `PROGMEM` for strings/tables, consider 128x32 display
+- Arduino Mega: Library uses ~1.6KB RAM → 6.4KB available for user code
 - ESP32: No significant constraints
 
 ---
 
 ## Performance Guarantees
 
+- **Arduino Nano**: ≥15 FPS achievable (requires I2C fast mode 400kHz) - **tight memory limits user code complexity**
 - **Arduino Mega**: ≥20 FPS achievable (requires I2C fast mode 400kHz)
 - **ESP32**: ≥30 FPS easily (≥60 FPS possible with optimization)
 - **Transition latency**: <300ms for all interpolations

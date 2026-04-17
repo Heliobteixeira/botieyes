@@ -61,7 +61,7 @@ test/
 - 👁️ Visual aesthetics (emotional expressiveness)
 - 👁️ Smoothness on real hardware (frame rate, jitter)
 - 👁️ Display-specific quirks (ghosting, refresh artifacts)
-- 👁️ Performance on Arduino Mega (20 FPS target)
+- 👁️ Performance on Arduino Nano (15 FPS target, PRIMARY), Mega (20 FPS target)
 
 ### CI/CD Integration
 
@@ -70,14 +70,15 @@ test/
 jobs:
   unit-tests:
     - Run PlatformIO native tests (fast, no hardware)
-    - Build for all targets (Mega, ESP32)
+    - Build for all targets (Nano, Mega, ESP32)
     - Check memory usage via `pio run -t size`
     - Upload golden image diff reports (if visual tests fail)
 ```
 
 **Memory Constraint Validation**:
-- Ensure compiled library < 6KB (leaving >2KB for user code on Mega)
+- Ensure compiled library ~1.6KB (leaving ~400 bytes for user code on Nano, >6KB on Mega)
 - Fail CI if RAM usage exceeds targets
+- Warn if Nano build exceeds 1.8KB (leaves <200 bytes for user)
 
 ---
 
@@ -86,9 +87,10 @@ jobs:
 ### Performance Characteristics
 
 **Rendering Speed**:
+- **Arduino Nano (16MHz)**: 10-15 FPS typical, 15-20 FPS achievable with optimization (**PRIMARY TARGET**)
 - **Arduino Mega (16MHz)**: 10-20 FPS typical, 20-25 FPS achievable with optimization
 - **ESP32 (240MHz)**: 30-60 FPS easily, can exceed 60 FPS
-- **Bottleneck**: I2C interface (~25ms full screen transfer), not CPU
+- **Bottleneck**: I2C interface (~25ms full screen transfer), not CPU - **I2C fast mode ESSENTIAL for Nano**
 
 **Primitive Render Times** (per operation):
 - `drawCircle()`: 2-4ms
@@ -128,13 +130,35 @@ jobs:
 
 ### Memory Footprint
 
-**Arduino Mega (8KB SRAM) Budget**:
-- Framebuffer: 1KB (128x64 display)
-- Adafruit GFX library: ~200-500 bytes
-- BotiEyes state/variables: ~1-2KB estimated
-- **Remaining for user code**: ~5-6KB
+**Framebuffer Requirements**:
+- SSD1306 128x64: 1024 bytes (128 × 64 ÷ 8)
+- SSD1306 128x32: 512 bytes
+- SH1106 128x64: 1024 bytes
+
+**Library Overhead** (estimated):
+- Adafruit GFX: ~200 bytes static data
+- Adafruit SSD1306: ~200-300 bytes driver state
+- BotiEyes state: ~100 bytes (emotion, position, expression parameters)
+
+**Total RAM Usage**:
+
+**Arduino Nano (2KB SRAM, 128x64 display)** - **PRIMARY TARGET**:
+- Framebuffer: 1024 bytes (if using GFXcanvas1)
+- Libraries: ~500 bytes
+- BotiEyes state: ~100 bytes
+- **Total library**: ~1600 bytes
+- **User code available**: ~400 bytes ⚠️ **VERY TIGHT**
+- **Recommendation**: Minimize global variables, use PROGMEM for constants, consider 128x32 display (saves 512 bytes)
+
+**Arduino Mega (8KB SRAM, 128x64 display)**:
+- Framebuffer: 1024 bytes (if using GFXcanvas1)
+- Libraries: ~500 bytes
+- BotiEyes state: ~100 bytes
+- **Remaining for user code**: ~6.4KB
 
 **ESP32 (520KB SRAM)**: No memory concerns; ample headroom for optimizations.
+
+**Validation**: BotiEyes library fits on Arduino Nano with **minimal** user code headroom (~400 bytes). Mega provides comfortable 6.4KB for user applications.
 
 ---
 
@@ -147,10 +171,10 @@ jobs:
    - Batches all drawing into single transfer
    - Required for smooth animation
 
-2. **I2C Fast Mode (400kHz)** - HIGH PRIORITY
+2. **I2C Fast Mode (400kHz)** - **ESSENTIAL FOR NANO**
    - Default: 100kHz (~40ms screen transfer)
    - Fast mode: 400kHz (~10-15ms transfer)
-   - 3-4x speedup; essential for 20 FPS target
+   - 3-4x speedup; **MANDATORY for 15 FPS on Nano**, essential for 20 FPS on Mega
 
 3. **Pre-computed Lookup Tables** - MEDIUM PRIORITY
    - Store sin/cos values for pupil paths (PROGMEM)

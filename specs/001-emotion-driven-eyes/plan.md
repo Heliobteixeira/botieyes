@@ -14,12 +14,12 @@ Build a parametric emotion-driven eye animation library for OLED displays using 
 **Language/Version**: C++ (Arduino 1.8+/PlatformIO) for embedded library; Python 3.8+ for PC emulator  
 **Primary Dependencies**: Adafruit GFX (embedded rendering only); Pygame (emulator only)  
 **Storage**: N/A (stateless library; emotion/position state in RAM only)  
-**Testing**: NEEDS CLARIFICATION (unit tests for mapping functions; emulator visual validation; Arduino hardware validation)  
-**Target Platform**: Arduino Mega 2560 (8KB SRAM), ESP32 (520KB SRAM), PC emulator (Windows/macOS/Linux)
+**Testing**: PlatformIO + Unity + ArduinoFake (unit tests); MockDisplay for visual validation (golden image checksums); minimal hardware tests  
+**Target Platform**: Arduino Nano (2KB SRAM, PRIMARY), Mega 2560 (8KB SRAM), ESP32 (520KB SRAM), PC emulator (Windows/macOS/Linux)
 **Project Type**: Embedded library (Arduino IDE compilation) + PC emulator (development tool)  
-**Performance Goals**: 20-25 FPS (Mega), 30-60 FPS (ESP32), 60+ FPS (PC emulator); <300ms transition latency  
-**Constraints**: Static allocation only (no malloc/new); 8KB SRAM minimum (Mega); <6KB library footprint to leave >2KB for user code; minimal dependencies  
-**Scale/Scope**: Single library; 5 geometric primitives per eye; 10+ emotion anchors; 3 built-in animations; 2 platform targets + emulator
+**Performance Goals**: 15-20 FPS (Nano), 20-25 FPS (Mega), 30-60 FPS (ESP32), 60+ FPS (PC emulator); <300ms transition latency  
+**Constraints**: Static allocation only (no malloc/new); 2KB SRAM minimum (Nano); ~1.6KB library footprint leaves ~0.4KB for user code on Nano (CRITICAL), ~6.4KB on Mega; minimal dependencies; I2C fast mode essential  
+**Scale/Scope**: Single library; 5 geometric primitives per eye; 10+ emotion anchors; 3 built-in animations; 3 platform targets + emulator
 
 ## Constitution Check
 
@@ -55,7 +55,7 @@ Build a parametric emotion-driven eye animation library for OLED displays using 
 |-----------|--------|-------------------|
 | I. Pragmatic Simplicity | ✅ **PASS** | Data model minimal (96 bytes total state); API surface small (12 public methods); no unnecessary abstractions |
 | II. Maintainable Code | ✅ **PASS** | Clear entity separation (EmotionState, EyePositionState, ExpressionParameters); documented contracts; straightforward data flow |
-| III. Performance-First | ✅ **PASS** | Integer math planned; lookup tables in PROGMEM; GFXcanvas offscreen rendering; I2C fast mode specified; memory budget validated (1.6KB/8KB = 20% usage) |
+| III. Performance-First | ✅ **PASS** | Integer math planned; lookup tables in PROGMEM; GFXcanvas offscreen rendering; I2C fast mode specified; memory budget validated (1.6KB/2KB Nano = 80% library, 20% user code; 1.6KB/8KB Mega = 20% library, 80% user code) |
 | IV. Hardware Abstraction | ✅ **PASS** | DisplayConfig explicit; renderer separated from logic; EyeRenderer abstraction enables future displays |
 | V. Emotion-Driven | ✅ **PASS** | Valence-arousal core to all design; EmotionMapper central entity; continuous model throughout |
 | VI. Cross-Platform Emulation | ✅ **PASS** | PC emulator specified in architecture; PNG export in API contract; MockDisplay for testing |
@@ -65,10 +65,11 @@ Build a parametric emotion-driven eye animation library for OLED displays using 
 **Post-Design Gate Result**: ✅ **PASS** - All principles satisfied; design ready for task generation
 
 **Notes**:
-- Memory budget confirmed feasible (1.6KB used / 8KB available on Mega)
-- Performance targets achievable per research findings (20 FPS Mega, 30-60 FPS ESP32)
+- Memory budget confirmed feasible (1.6KB used / 2KB available on Nano - **TIGHT**, 1.6KB / 8KB on Mega - **COMFORTABLE**)
+- Performance targets achievable per research findings (15-20 FPS Nano, 20-25 FPS Mega, 30-60 FPS ESP32)
 - Testing strategy defined (PlatformIO + Unity + MockDisplay)
 - No new complexity violations introduced during design
+- **Nano constraint**: Users must carefully manage memory (~400 bytes user code headroom); consider 128x32 display for more headroom
 
 ## Project Structure
 

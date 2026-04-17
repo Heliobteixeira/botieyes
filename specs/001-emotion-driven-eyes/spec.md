@@ -244,11 +244,12 @@ eye_squint = max(0, (0.5 - arousal) × 0.4) if valence < 0 else 0
 
 | Platform | SRAM | Target FPS | Features | Notes |
 |----------|------|------------|----------|-------|
-| **Arduino Mega 2560** | 8 KB | 20-25 | Core emotions, basic animations | Recommended minimum |
-| **ESP32** | 520 KB | 30-60 | Full feature set, WiFi/BLE | Standard target |
+| **Arduino Nano** | 2 KB | 15-20 | Core emotions, basic animations | Primary target (tight memory) |
+| **Arduino Mega 2560** | 8 KB | 20-25 | Full feature set | Comfortable memory |
+| **ESP32** | 520 KB | 30-60 | Full + WiFi/BLE | High performance |
 | **PC Emulator** | >1 GB | 60+ | Full + debugging, frame capture | Development platform |
 
-*Note: Arduino Nano (2KB SRAM) not recommended due to memory constraints*
+*Note: Arduino Nano requires careful memory management (~400 bytes user code headroom)*
 
 ### Key Entities
 

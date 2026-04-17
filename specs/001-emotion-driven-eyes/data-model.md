@@ -312,12 +312,20 @@ enum ErrorCode {
 - Lookup tables (sin/cos in PROGMEM): ~0.5KB
 - **Total code**: ~5KB
 
+**Arduino Nano Budget Check** (2KB SRAM, PRIMARY TARGET):
+- Library state: 96 bytes
+- Framebuffer (128x64): 1024 bytes
+- Library stack/heap: ~500 bytes
+- **Used**: ~1.6KB
+- **Remaining for user**: ~400 bytes ⚠️ **CRITICAL** - Very tight constraint
+- **Alternative**: Use 128x32 display (512 bytes framebuffer → ~900 bytes user code)
+
 **Arduino Mega Budget Check** (8KB SRAM):
 - Library state: 96 bytes
 - Framebuffer: 1024 bytes
 - Library stack/heap: ~500 bytes
 - **Used**: ~1.6KB
-- **Remaining for user**: ~6.4KB ✅ **PASS** (exceeds 2KB minimum requirement)
+- **Remaining for user**: ~6.4KB ✅ **COMFORTABLE** - Ample headroom
 
 ---
 

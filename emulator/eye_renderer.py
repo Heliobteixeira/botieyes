@@ -63,14 +63,16 @@ class EyeRenderer:
         if is_top:
             y1 = cy - half_h
             y2 = y1 + cov_h
-            pygame.draw.rect(surf, color, (cx - half_w, y1, w, cov_h))
+            # +1 to cover the last eye row (ellipse is inclusive at cy+half_h)
+            pygame.draw.rect(surf, color, (cx - half_w, y1 - 1, w, cov_h + 2))
             # Curved edge: filled ellipse centered at y2, lower half bulges down into the eye
             pygame.draw.ellipse(surf, color,
                                 (cx - half_w, y2 - cov_h // 2, w, cov_h))
         else:
             y2 = cy + half_h
             y1 = y2 - cov_h
-            pygame.draw.rect(surf, color, (cx - half_w, y1, w, cov_h))
+            # +1 to cover the last eye row (ellipse is inclusive at cy+half_h)
+            pygame.draw.rect(surf, color, (cx - half_w, y1, w, cov_h + 2))
             # Curved edge: filled ellipse centered at y1, upper half bulges up into the eye (smile)
             pygame.draw.ellipse(surf, color,
                                 (cx - half_w, y1 - cov_h // 2, w, cov_h))

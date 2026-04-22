@@ -121,7 +121,10 @@ void RenderingHelpers::drawEyelidOverlay(Adafruit_GFX* display, int16_t xCenter,
         // Top eyelid: Draw filled rectangle from top of eye down
         int16_t y1 = yCenter - halfHeight;
         int16_t y2 = y1 + coverageHeight;
-        display->fillRect(xCenter - halfWidth, y1, width, coverageHeight, color);
+        // +2 vertical margin: fillRect's height is exclusive of the last row,
+        // but the white eye's fillEllipse fills cy±halfHeight inclusive -> without
+        // the margin a 1-row strip of white leaks through at the eye's top edge.
+        display->fillRect(xCenter - halfWidth, y1 - 1, width, coverageHeight + 2, color);
 
         // Curved edge: filled ellipse centered on the bottom edge of the rect,
         // its lower half bulges DOWN into the eye (droop curve).
@@ -130,7 +133,9 @@ void RenderingHelpers::drawEyelidOverlay(Adafruit_GFX* display, int16_t xCenter,
         // Bottom eyelid: Draw filled rectangle from bottom of eye up (smile curve)
         int16_t y2 = yCenter + halfHeight;
         int16_t y1 = y2 - coverageHeight;
-        display->fillRect(xCenter - halfWidth, y1, width, coverageHeight, color);
+        // +2 vertical margin (see comment above): ensures the lid covers the
+        // inclusive last row of the white eye ellipse at cy+halfHeight.
+        display->fillRect(xCenter - halfWidth, y1, width, coverageHeight + 2, color);
 
         // Curved edge: filled ellipse centered on the top edge of the rect,
         // its upper half bulges UP into the eye (smile curve).

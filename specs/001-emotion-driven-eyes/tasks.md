@@ -93,16 +93,16 @@
 
 ### Implementation for User Story 4
 
-- [ ] T041 [US4] Implement setEyePosition(h, v, duration) in BotiEyes.cpp with angle clamping, target setting, interpolation start in BotiEyes/src/
-- [ ] T042 [US4] Implement getEyePosition(h*, v*) in BotiEyes.cpp returning current interpolated angles in BotiEyes/src/
-- [ ] T043 [P] [US4] Implement lookLeft() in BotiEyes.cpp calling setEyePosition(-45, 0) in BotiEyes/src/
-- [ ] T044 [P] [US4] Implement lookRight() in BotiEyes.cpp calling setEyePosition(+45, 0) in BotiEyes/src/
-- [ ] T045 [P] [US4] Implement lookUp() in BotiEyes.cpp calling setEyePosition(0, +30) in BotiEyes/src/
-- [ ] T046 [P] [US4] Implement lookDown() in BotiEyes.cpp calling setEyePosition(0, -30) in BotiEyes/src/
-- [ ] T047 [P] [US4] Implement neutral() in BotiEyes.cpp calling setEyePosition(0, 0) in BotiEyes/src/
-- [ ] T048 [US4] Update renderEyes() in BotiEyes.cpp to apply H/V angle transformations to eye positions in BotiEyes/src/
-- [ ] T049 [US4] Update update() in BotiEyes.cpp to interpolate eye position alongside emotion in BotiEyes/src/
-- [ ] T050 [US4] Create EyePosition.ino example in BotiEyes/examples/EyePosition/ demonstrating position control and predefined behaviors
+- [X] T041 [US4] Implement setEyePosition(h, v, duration) in BotiEyes.cpp with angle clamping, target setting, interpolation start in BotiEyes/src/
+- [X] T042 [US4] Implement getEyePosition(h*, v*) in BotiEyes.cpp returning current interpolated angles in BotiEyes/src/
+- [X] T043 [P] [US4] Implement lookLeft() in BotiEyes.cpp calling setEyePosition(-45, 0) in BotiEyes/src/
+- [X] T044 [P] [US4] Implement lookRight() in BotiEyes.cpp calling setEyePosition(+45, 0) in BotiEyes/src/
+- [X] T045 [P] [US4] Implement lookUp() in BotiEyes.cpp calling setEyePosition(0, +30) in BotiEyes/src/
+- [X] T046 [P] [US4] Implement lookDown() in BotiEyes.cpp calling setEyePosition(0, -30) in BotiEyes/src/
+- [X] T047 [P] [US4] Implement neutral() in BotiEyes.cpp calling setEyePosition(0, 0) in BotiEyes/src/
+- [X] T048 [US4] Update renderEyes() in BotiEyes.cpp to apply H/V angle transformations to eye positions in BotiEyes/src/
+- [X] T049 [US4] Update update() in BotiEyes.cpp to interpolate eye position alongside emotion in BotiEyes/src/
+- [X] T050 [US4] Create EyePosition.ino example in BotiEyes/examples/EyePosition/ demonstrating position control and predefined behaviors
 
 **Checkpoint**: User Story 4 complete - eye position control fully functional, integrates with emotion from US1
 

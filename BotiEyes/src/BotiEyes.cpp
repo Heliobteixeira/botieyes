@@ -456,8 +456,9 @@ void BotiEyes::renderEyes() {
     const int16_t cx = s_screenWidth  / 2;
     const int16_t cy = s_screenHeight / 2;
 
-    // Base spacing: eyes sit ~1/4 and ~3/4 horizontally
-    int16_t spacing = (s_screenWidth / 4) + params.spacingAdjust;
+    // Base spacing: eyes sit a little inside of 1/4 and 3/4 horizontally
+    // (reduced from s_screenWidth/4 so the pair reads as focused/close-range)
+    int16_t spacing = (s_screenWidth * 7 / 32) + params.spacingAdjust;
     int16_t leftX   = cx - spacing;
     int16_t rightX  = cx + spacing;
 
@@ -466,6 +467,15 @@ void BotiEyes::renderEyes() {
     //    Vertical:   -45..+45 -> ~-10..+10 px
     int16_t gazeX = (int32_t)positionState->horizontal * 16 / 90;
     int16_t gazeY = -(int32_t)positionState->vertical   * 10 / 45;  // screen Y inverted
+
+    // Vergence (disjunctive movement): when gaze goes off-center, simulate
+    // fixation on a medium-close object -- the eye NEARER the target moves
+    // less, the FARTHER eye moves more, so both converge nasally.
+    // Magnitude: ~30 % of |gazeX| (stronger convergence for a close object).
+    int16_t absGazeX   = gazeX < 0 ? -gazeX : gazeX;
+    int16_t verge      = (int16_t)(absGazeX * 10 / 100);
+    int16_t gazeXLeft  = gazeX + verge;   // left  eye shifted further right
+    int16_t gazeXRight = gazeX - verge;   // right eye shifted further left
 
     int16_t eyeY = cy + params.yOffset + gazeY;
 
@@ -489,20 +499,20 @@ void BotiEyes::renderEyes() {
     display->fillScreen(0);
 
     // Filled eye ellipses (pupils-free shape design)
-    RenderingHelpers::fillEllipse(display, leftX  + gazeX, eyeY, lW, lH, 1);
-    RenderingHelpers::fillEllipse(display, rightX + gazeX, eyeY, rW, rH, 1);
+    RenderingHelpers::fillEllipse(display, leftX  + gazeXLeft,  eyeY, lW, lH, 1);
+    RenderingHelpers::fillEllipse(display, rightX + gazeXRight, eyeY, rW, rH, 1);
 
     // Eyelid overlays drawn in background color (0) to carve shape
     if (params.lidTopCoverage > 0.0f) {
-        RenderingHelpers::drawEyelidOverlay(display, leftX  + gazeX, eyeY,
+        RenderingHelpers::drawEyelidOverlay(display, leftX  + gazeXLeft,  eyeY,
                                             lW, lH, params.lidTopCoverage, true, 0);
-        RenderingHelpers::drawEyelidOverlay(display, rightX + gazeX, eyeY,
+        RenderingHelpers::drawEyelidOverlay(display, rightX + gazeXRight, eyeY,
                                             rW, rH, params.lidTopCoverage, true, 0);
     }
     if (params.lidBottomCoverage > 0.0f) {
-        RenderingHelpers::drawEyelidOverlay(display, leftX  + gazeX, eyeY,
+        RenderingHelpers::drawEyelidOverlay(display, leftX  + gazeXLeft,  eyeY,
                                             lW, lH, params.lidBottomCoverage, false, 0);
-        RenderingHelpers::drawEyelidOverlay(display, rightX + gazeX, eyeY,
+        RenderingHelpers::drawEyelidOverlay(display, rightX + gazeXRight, eyeY,
                                             rW, rH, params.lidBottomCoverage, false, 0);
     }
 }

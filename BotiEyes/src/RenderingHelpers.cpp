@@ -122,27 +122,19 @@ void RenderingHelpers::drawEyelidOverlay(Adafruit_GFX* display, int16_t xCenter,
         int16_t y1 = yCenter - halfHeight;
         int16_t y2 = y1 + coverageHeight;
         display->fillRect(xCenter - halfWidth, y1, width, coverageHeight, color);
-        
-        // Add curved edge using filled triangle for smooth look
-        display->fillTriangle(
-            xCenter - halfWidth, y2,
-            xCenter + halfWidth, y2,
-            xCenter, y2 + (coverageHeight / 2),
-            color
-        );
+
+        // Curved edge: filled ellipse centered on the bottom edge of the rect,
+        // its lower half bulges DOWN into the eye (droop curve).
+        fillEllipse(display, xCenter, y2, width, coverageHeight, color);
     } else {
         // Bottom eyelid: Draw filled rectangle from bottom of eye up (smile curve)
         int16_t y2 = yCenter + halfHeight;
         int16_t y1 = y2 - coverageHeight;
         display->fillRect(xCenter - halfWidth, y1, width, coverageHeight, color);
-        
-        // Add curved edge using filled triangle for smile curve
-        display->fillTriangle(
-            xCenter - halfWidth, y1,
-            xCenter + halfWidth, y1,
-            xCenter, y1 - (coverageHeight / 2),
-            color
-        );
+
+        // Curved edge: filled ellipse centered on the top edge of the rect,
+        // its upper half bulges UP into the eye (smile curve).
+        fillEllipse(display, xCenter, y1, width, coverageHeight, color);
     }
 }
 

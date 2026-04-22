@@ -1,3 +1,4 @@
+
 /*
  * BasicEmotion.ino - BotiEyes Library Example
  * 
@@ -5,14 +6,9 @@
  * Cycles through emotions with smooth transitions.
  * 
  * Hardware:
- * - Arduino Nano/Mega/ESP32
- * - SSD1306 OLED Display 128x64 (I2C)
- * - Connections:
- *   - SDA → A4 (Nano) / 20 (Mega) / 21 (ESP32)
- *   - SCL → A5 (Nano) / 21 (Mega) / 22 (ESP32)
- *   - VCC → 5V (Nano/Mega) or 3.3V (ESP32)
- *   - GND → GND
- * 
+ * - TTGO LoRa32 (ESP32 + integrated SSD1306 OLED 128x64 I2C)
+ * - OLED pins: SDA=GPIO4, SCL=GPIO15, RST=GPIO16
+ *
  * Dependencies:
  * - BotiEyes library
  * - Adafruit GFX Library
@@ -35,14 +31,33 @@
 #include <Adafruit_SSD1306.h>
 #include <BotiEyes.h>
 
-// Display configuration
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 64
-#define OLED_RESET -1
+// Display configuration (TTGO LoRa32)
+#define SCREEN_WIDTH   128
+#define SCREEN_HEIGHT  64
 #define SCREEN_ADDRESS 0x3C
+#define OLED_SDA 4
+#define OLED_SCL 15
+#define OLED_RST 16
 
 // Create display object
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RST);
+
+// ---- Brightness control (from BrightnessChange example) ----
+enum BrightnessLevel { BRIGHT_LOW, BRIGHT_MED, BRIGHT_HIGH };
+
+// SSD1306 contrast alone has minimal effect; combine 0x81 + 0xD9 + 0xDB.
+void setBrightness(BrightnessLevel level) {
+  uint8_t contrast, precharge, vcomh;
+  switch (level) {
+    case BRIGHT_LOW:  contrast = 0x00; precharge = 0x11; vcomh = 0x00; break;
+    case BRIGHT_MED:  contrast = 0x80; precharge = 0x55; vcomh = 0x20; break;
+    case BRIGHT_HIGH:
+    default:          contrast = 0xFF; precharge = 0xF1; vcomh = 0x40; break;
+  }
+  display.ssd1306_command(0x81); display.ssd1306_command(contrast);
+  display.ssd1306_command(0xD9); display.ssd1306_command(precharge);
+  display.ssd1306_command(0xDB); display.ssd1306_command(vcomh);
+}
 
 // Create BotiEyes object
 BotiEyes::BotiEyes eyes;
@@ -50,25 +65,34 @@ BotiEyes::BotiEyes eyes;
 // Emotion cycle state
 uint8_t currentEmotion = 0;
 uint32_t lastEmotionChange = 0;
-const uint16_t EMOTION_DURATION = 2000;  // 2 seconds per emotion
+const uint16_t EMOTION_DURATION = 10000;  // 2 seconds per emotion
 
 void setup() {
   // Initialize serial for debugging
   Serial.begin(115200);
   Serial.println(F("BotiEyes - BasicEmotion Example"));
   Serial.println(F("================================"));
-  
-  // Initialize I2C
-  Wire.begin();
-  
+
+  // Hardware reset the OLED (required on TTGO LoRa32)
+  pinMode(OLED_RST, OUTPUT);
+  digitalWrite(OLED_RST, LOW);
+  delay(20);
+  digitalWrite(OLED_RST, HIGH);
+
+  // Initialize I2C on TTGO LoRa32 OLED pins
+  Wire.begin(OLED_SDA, OLED_SCL);
+
   // Initialize display
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS, false, false)) {
     Serial.println(F("ERROR: SSD1306 allocation failed!"));
     while (1);  // Halt
   }
-  
+
   Serial.println(F("Display initialized"));
-  
+
+  // Set maximum brightness
+  setBrightness(BRIGHT_HIGH);
+
   // Clear display
   display.clearDisplay();
   display.display();
@@ -95,11 +119,14 @@ void setup() {
     Serial.println(result);
     while (1);  // Halt
   }
-  
+
+  // Attach the display so BotiEyes can render eyes directly
+  eyes.setDisplay(&display);
+
   Serial.println(F("BotiEyes initialized"));
   Serial.println(F("Starting emotion cycle..."));
   Serial.println();
-  
+
   // Start with neutral emotion
   eyes.setEmotion(0.0f, 0.5f, 400);
   lastEmotionChange = millis();
@@ -174,35 +201,12 @@ void loop() {
     lastEmotionChange = now;
   }
   
-  // Update emotion interpolation
+  // Update emotion interpolation + render eyes into the display buffer
   eyes.update();
-  
-  // Clear display for new frame
-  display.clearDisplay();
-  
-  // TODO: Render eyes to display (renderEyes implementation)
-  // For now, just show emotion name
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0, 0);
-  
-  const char* emotionNames[] = {
-    "Happy", "Sad", "Angry", "Calm", "Excited", "Tired",
-    "Surprised", "Anxious", "Content", "Curious", "Thinking", "Confused"
-  };
-  display.println(emotionNames[currentEmotion]);
-  
-  // Show current valence/arousal
-  float valence, arousal;
-  eyes.getCurrentEmotion(&valence, &arousal);
-  display.print(F("V: "));
-  display.print(valence, 2);
-  display.print(F("  A: "));
-  display.println(arousal, 2);
-  
-  // Update display
+
+  // Push buffer to the OLED
   display.display();
-  
+
   // Target 20 FPS (50ms per frame)
   delay(50);
 }

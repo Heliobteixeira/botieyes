@@ -20,6 +20,10 @@ struct AnimationState {
     AnimationState() : type(ANIM_NONE), startTime(0), duration(0), progress(0.0f), active(false) {}
 };
 
+// Frame context: screen dimensions captured at initialize()
+static uint8_t s_screenWidth  = 128;
+static uint8_t s_screenHeight = 64;
+
 // Constructor
 BotiEyes::BotiEyes()
     : displayPtr(nullptr)
@@ -59,8 +63,15 @@ ErrorCode BotiEyes::initialize(const DisplayConfig& config) {
     // Note: Display initialization is done externally by user
     // We just store the pointer (passed via update() or set separately)
     
+    s_screenWidth  = config.width;
+    s_screenHeight = config.height;
+
     initialized = true;
     return OK;
+}
+
+void BotiEyes::setDisplay(Adafruit_GFX* display) {
+    displayPtr = (void*)display;
 }
 
 ErrorCode BotiEyes::validateConfig(const DisplayConfig& config) {
@@ -292,8 +303,10 @@ ErrorCode BotiEyes::update() {
     updateAnimation();
     updateIdleBehavior();
     
-    // Note: Actual rendering to display is done externally by user after update()
-    // This just updates internal state
+    // Render current frame if a display was attached
+    if (displayPtr != nullptr) {
+        renderEyes();
+    }
     
     return OK;
 }
@@ -352,9 +365,88 @@ void BotiEyes::updateIdleBehavior() {
 }
 
 void BotiEyes::renderEyes() {
-    // This method will be implemented to actually draw to display
-    // For now, it's a placeholder that will be filled in with rendering logic
-    // Actual rendering should be done by user after calling update()
+    if (!displayPtr || !emotionState || !positionState) return;
+
+    Adafruit_GFX* display = static_cast<Adafruit_GFX*>(displayPtr);
+
+    // 1. Map current emotion -> expression parameters
+    ExpressionParameters params;
+    EmotionMapper::mapEmotionToExpression(
+        emotionState->currentValence,
+        emotionState->currentArousal,
+        &params);
+    params.clamp();
+
+    // 2. Blink / wink: scale vertical openness by (1 - progress curve)
+    //    Uses a triangular profile: closes then reopens
+    float leftOpen  = 1.0f;
+    float rightOpen = 1.0f;
+    if (animationState && animationState->active) {
+        float p = animationState->progress;        // 0..1
+        float closed = (p < 0.5f) ? (p * 2.0f) : ((1.0f - p) * 2.0f);  // 0->1->0
+        if (closed > 1.0f) closed = 1.0f;
+        float openness = 1.0f - closed;
+        switch (animationState->type) {
+            case ANIM_BLINK:      leftOpen = rightOpen = openness; break;
+            case ANIM_WINK_LEFT:  leftOpen  = openness; break;
+            case ANIM_WINK_RIGHT: rightOpen = openness; break;
+            default: break;
+        }
+    }
+
+    // 3. Eye layout on the screen
+    const int16_t cx = s_screenWidth  / 2;
+    const int16_t cy = s_screenHeight / 2;
+
+    // Base spacing: eyes sit ~1/4 and ~3/4 horizontally
+    int16_t spacing = (s_screenWidth / 4) + params.spacingAdjust;
+    int16_t leftX   = cx - spacing;
+    int16_t rightX  = cx + spacing;
+
+    // 4. Position offset from coupled gaze (angles -> pixels)
+    //    Horizontal: -90..+90 -> ~-16..+16 px
+    //    Vertical:   -45..+45 -> ~-10..+10 px
+    int16_t gazeX = (int32_t)positionState->horizontal * 16 / 90;
+    int16_t gazeY = -(int32_t)positionState->vertical   * 10 / 45;  // screen Y inverted
+
+    int16_t eyeY = cy + params.yOffset + gazeY;
+
+    // 5. Per-eye sizes (with optional asymmetry)
+    uint8_t lW = params.eyeWidth;
+    uint8_t lH = params.eyeHeight;
+    uint8_t rW = params.eyeWidth;
+    uint8_t rH = params.eyeHeight;
+    if (params.asymmetry != 0.0f) {
+        // Negative asymmetry -> left eye smaller, right eye bigger (Confused/Thinking)
+        float a = params.asymmetry;
+        lH = (uint8_t)constrain((int)(lH * (1.0f + a)), 4, 60);
+        rH = (uint8_t)constrain((int)(rH * (1.0f - a)), 4, 60);
+    }
+
+    // Apply blink/wink vertical scaling (min 2px so we still see a line)
+    lH = (uint8_t)max(2, (int)(lH * leftOpen));
+    rH = (uint8_t)max(2, (int)(rH * rightOpen));
+
+    // 6. Clear and draw
+    display->fillScreen(0);
+
+    // Filled eye ellipses (pupils-free shape design)
+    RenderingHelpers::fillEllipse(display, leftX  + gazeX, eyeY, lW, lH, 1);
+    RenderingHelpers::fillEllipse(display, rightX + gazeX, eyeY, rW, rH, 1);
+
+    // Eyelid overlays drawn in background color (0) to carve shape
+    if (params.lidTopCoverage > 0.0f) {
+        RenderingHelpers::drawEyelidOverlay(display, leftX  + gazeX, eyeY,
+                                            lW, lH, params.lidTopCoverage, true, 0);
+        RenderingHelpers::drawEyelidOverlay(display, rightX + gazeX, eyeY,
+                                            rW, rH, params.lidTopCoverage, true, 0);
+    }
+    if (params.lidBottomCoverage > 0.0f) {
+        RenderingHelpers::drawEyelidOverlay(display, leftX  + gazeX, eyeY,
+                                            lW, lH, params.lidBottomCoverage, false, 0);
+        RenderingHelpers::drawEyelidOverlay(display, rightX + gazeX, eyeY,
+                                            rW, rH, params.lidBottomCoverage, false, 0);
+    }
 }
 
 } // namespace BotiEyes

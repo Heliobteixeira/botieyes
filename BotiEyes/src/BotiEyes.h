@@ -44,6 +44,12 @@ struct AnimationState;
 class Interpolator;
 class EmotionMapper;
 
+} // namespace BotiEyes
+
+class Adafruit_GFX;
+
+namespace BotiEyes {
+
 /**
  * BotiEyes - Main library class
  * 
@@ -66,6 +72,14 @@ public:
      * @return ErrorCode::OK on success, error code otherwise
      */
     ErrorCode initialize(const DisplayConfig& config);
+    
+    /**
+     * Attach an Adafruit_GFX-compatible display for rendering.
+     * Must be called (after display.begin()) before update() will draw.
+     *
+     * @param display Pointer to initialized Adafruit_GFX display
+     */
+    void setDisplay(Adafruit_GFX* display);
     
     /**
      * Validate display configuration before initialization

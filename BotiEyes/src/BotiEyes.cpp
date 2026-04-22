@@ -351,16 +351,30 @@ void BotiEyes::updateAnimation() {
 
 void BotiEyes::updateIdleBehavior() {
     if (!idleBehaviorEnabled) return;
-    
+
     uint32_t now = millis();
-    uint32_t elapsed = now - lastIdleTrigger;
-    
-    // Trigger micro-blink every 3-5 seconds (random)
-    uint32_t interval = 3000 + (random(2000));  // 3000-5000ms
-    
-    if (elapsed >= interval) {
-        blink(100);  // Quick micro-blink (100ms)
+
+    // Next blink time is pre-computed; re-draw only after each blink fires.
+    // Distribution: average of 3 uniform samples over [MIN..MAX] gives a
+    // bell-shaped (Irwin-Hall) curve centered at (MIN+MAX)/2, naturally
+    // clamped, no float / sqrt / log / cos needed.
+    //
+    // Human spontaneous inter-blink: ~2-10 s, mean ~4 s -> use 2000..8000 ms.
+    // Human blink closure:           ~100-300 ms, mean ~180 ms.
+    static uint32_t nextBlinkAt = 0;
+
+    if (nextBlinkAt == 0) {
+        uint32_t a = random(2000, 8001);
+        uint32_t b = random(2000, 8001);
+        uint32_t c = random(2000, 8001);
+        nextBlinkAt = lastIdleTrigger + (a + b + c) / 3;
+    }
+
+    if ((int32_t)(now - nextBlinkAt) >= 0) {
+        uint32_t d = (random(100, 301) + random(100, 301)) / 2;  // mean ~200
+        blink((uint16_t)d);
         lastIdleTrigger = now;
+        nextBlinkAt = 0;  // sample a fresh interval next frame
     }
 }
 

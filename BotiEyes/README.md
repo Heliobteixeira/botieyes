@@ -91,7 +91,7 @@ eyes.lookLeft();      // Look left (-45°, 0°)
 eyes.lookRight();     // Look right (+45°, 0°)
 eyes.lookUp();        // Look up (0°, +30°)
 eyes.lookDown();      // Look down (0°, -30°)
-eyes.neutral();       // Center gaze (0°, 0°)
+eyes.lookNeutral();   // Center gaze (0°, 0°)
 
 // Custom position
 eyes.setEyePosition(20, -10, 300);  // H: +20°, V: -10°, 300ms transition

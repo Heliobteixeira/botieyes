@@ -116,9 +116,9 @@
 
 ### Implementation for User Story 3
 
-- [ ] T051 [US3] Update emotion helper methods in BotiEyes.cpp to scale valence/arousal by intensity parameter (0.0-1.0) in BotiEyes/src/
-- [ ] T052 [US3] Add intensity clamping (0.0-1.0) in emotion helper methods in BotiEyes.cpp in BotiEyes/src/
-- [ ] T053 [US3] Update BasicEmotion.ino example to demonstrate intensity variations (e.g., happy(0.3), happy(0.7), happy(1.0)) in BotiEyes/examples/BasicEmotion/
+- [X] T051 [US3] Update emotion helper methods in BotiEyes.cpp to scale valence/arousal by intensity parameter (0.0-1.0) in BotiEyes/src/
+- [X] T052 [US3] Add intensity clamping (0.0-1.0) in emotion helper methods in BotiEyes.cpp in BotiEyes/src/
+- [X] T053 [US3] Update BasicEmotion.ino example to demonstrate intensity variations (e.g., happy(0.3), happy(0.7), happy(1.0)) in BotiEyes/examples/BasicEmotion/
 
 **Checkpoint**: User Story 3 complete - dynamic intensity variations functional, enhances US1 emotion control
 

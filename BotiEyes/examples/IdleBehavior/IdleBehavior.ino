@@ -100,10 +100,10 @@ void setup() {
   eyes.setDisplay(&display);
 
   // Set default emotion + enable idle behavior
-  eyes.content(1.0f);
+  eyes.neutral(0.5f);
   eyes.enableIdleBehavior(true);
 
-  Serial.println(F("Default emotion: content"));
+  Serial.println(F("Default emotion: neutral"));
   Serial.println(F("Idle behavior: enabled"));
 }
 

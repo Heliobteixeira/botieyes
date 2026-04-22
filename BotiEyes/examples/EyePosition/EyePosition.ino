@@ -97,7 +97,7 @@ void setup() {
 
   // Hold a pleasant base emotion so eye shape is clear
   eyes.content(1.0f);
-  eyes.neutral();
+  eyes.lookNeutral();
   lastPoseChange = millis();
 }
 
@@ -109,7 +109,7 @@ void loop() {
     switch (currentPose) {
       case 0:
         Serial.println(F("Gaze: center"));
-        eyes.neutral();
+        eyes.lookNeutral();
         break;
       case 1:
         Serial.println(F("Gaze: left"));

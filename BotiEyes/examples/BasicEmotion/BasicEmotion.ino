@@ -15,9 +15,10 @@
  * - Adafruit SSD1306 Library
  * 
  * Expected Behavior:
- * - Eyes cycle through 12 emotions every 2 seconds
- * - Smooth transitions between emotions
- * - Serial output shows current emotion name
+ * - Eyes cycle through 12 emotions, each shown at 3 intensity levels
+ *   (0.3, 0.7, 1.0). 3 seconds per step.
+ * - Smooth transitions between emotions and intensities
+ * - Serial output shows current emotion name and intensity
  * 
  * Memory Usage (Arduino Nano):
  * - BotiEyes library: ~1.04KB RAM
@@ -64,8 +65,10 @@ BotiEyes::BotiEyes eyes;
 
 // Emotion cycle state
 uint8_t currentEmotion = 0;
+uint8_t currentStep    = 0;   // 0 -> 0.3 intensity, 1 -> 0.7, 2 -> 1.0
 uint32_t lastEmotionChange = 0;
-const uint16_t EMOTION_DURATION = 3000;  // 3 seconds per emotion
+const uint16_t EMOTION_DURATION = 3000;  // 3 seconds per step
+const float INTENSITY_LEVELS[3] = { 0.3f, 0.7f, 1.0f };
 
 void setup() {
   // Initialize serial for debugging
@@ -135,61 +138,69 @@ void setup() {
 void loop() {
   uint32_t now = millis();
   
-  // Check if it's time to change emotion
+  // Check if it's time to advance
   if (now - lastEmotionChange >= EMOTION_DURATION) {
-    // Cycle to next emotion
-    currentEmotion = (currentEmotion + 1) % 12;
-    
+    // Advance intensity step; when it wraps, advance to next emotion
+    currentStep++;
+    if (currentStep >= 3) {
+      currentStep = 0;
+      currentEmotion = (currentEmotion + 1) % 12;
+    }
+    float intensity = INTENSITY_LEVELS[currentStep];
+
+    Serial.print(F("Step intensity: "));
+    Serial.println(intensity, 2);
+
     // Set new emotion based on current index
     BotiEyes::ErrorCode result = BotiEyes::OK;
     switch (currentEmotion) {
       case 0:
-        Serial.println(F("Emotion: Happy (valence: +0.35, arousal: 0.55)"));
-        result = eyes.happy(1.0f);
+        Serial.println(F("Emotion: Happy"));
+        result = eyes.happy(intensity);
         break;
       case 1:
-        Serial.println(F("Emotion: Sad (valence: -0.35, arousal: 0.35)"));
-        result = eyes.sad(1.0f);
+        Serial.println(F("Emotion: Sad"));
+        result = eyes.sad(intensity);
         break;
       case 2:
-        Serial.println(F("Emotion: Angry (valence: -0.30, arousal: 0.80)"));
-        result = eyes.angry(1.0f);
+        Serial.println(F("Emotion: Angry"));
+        result = eyes.angry(intensity);
         break;
       case 3:
-        Serial.println(F("Emotion: Calm (valence: 0.0, arousal: 0.1)"));
-        result = eyes.calm(1.0f);
+        Serial.println(F("Emotion: Calm"));
+        result = eyes.calm(intensity);
         break;
       case 4:
-        Serial.println(F("Emotion: Excited (valence: +0.30, arousal: 0.90)"));
-        result = eyes.excited(1.0f);
+        Serial.println(F("Emotion: Excited"));
+        result = eyes.excited(intensity);
         break;
       case 5:
-        Serial.println(F("Emotion: Tired (valence: +0.05, arousal: 0.10)"));
-        result = eyes.tired(1.0f);
+        Serial.println(F("Emotion: Tired"));
+        result = eyes.tired(intensity);
         break;
       case 6:
-        Serial.println(F("Emotion: Surprised (valence: +0.15, arousal: 0.85)"));
-        result = eyes.surprised(1.0f);
+        Serial.println(F("Emotion: Surprised"));
+        result = eyes.surprised(intensity);
         break;
       case 7:
-        Serial.println(F("Emotion: Anxious (valence: -0.20, arousal: 0.75)"));
-        result = eyes.anxious(1.0f);
+        Serial.println(F("Emotion: Anxious"));
+        result = eyes.anxious(intensity);
         break;
       case 8:
-        Serial.println(F("Emotion: Content (valence: +0.25, arousal: 0.40)"));
-        result = eyes.content(1.0f);
+        Serial.println(F("Emotion: Content"));
+        result = eyes.content(intensity);
         break;
       case 9:
-        Serial.println(F("Emotion: Curious (valence: +0.15, arousal: 0.60)"));
-        result = eyes.curious(1.0f);
+        Serial.println(F("Emotion: Curious"));
+        result = eyes.curious(intensity);
         break;
       case 10:
-        Serial.println(F("Emotion: Thinking (valence: 0.0, arousal: 0.45, asymmetry: -0.20)"));
-        result = eyes.thinking(1.0f);
+        Serial.println(F("Emotion: Thinking"));
+        result = eyes.thinking(intensity);
         break;
       case 11:
-        Serial.println(F("Emotion: Confused (valence: -0.15, arousal: 0.55, asymmetry: -0.30)"));
-        result = eyes.confused(1.0f);
+        Serial.println(F("Emotion: Confused"));
+        result = eyes.confused(intensity);
         break;
     }
     

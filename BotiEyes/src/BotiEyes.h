@@ -123,6 +123,7 @@ public:
     ErrorCode curious(float intensity = 1.0);   // Valence: +0.15, Arousal: 0.60
     ErrorCode thinking(float intensity = 1.0);  // Valence: 0.0, Arousal: 0.45, Asymmetry: -0.20
     ErrorCode confused(float intensity = 1.0);  // Valence: -0.15, Arousal: 0.55, Asymmetry: -0.30
+    ErrorCode neutral(float intensity = 1.0);   // Valence: 0.0,  Arousal: 0.0  (flat affect)
     
     // === Eye Position Control (Coupled - Both Eyes Together) ===
     
@@ -151,7 +152,7 @@ public:
     ErrorCode lookRight();   // (+45°, 0°)
     ErrorCode lookUp();      // (0°, +30°)
     ErrorCode lookDown();    // (0°, -30°)
-    ErrorCode neutral();     // (0°, 0°)
+    ErrorCode lookNeutral(); // (0°, 0°)
     
     // === Animations ===
     
@@ -200,7 +201,12 @@ private:
     
     bool idleBehaviorEnabled;
     uint32_t lastIdleTrigger;
-    
+
+    // Baseline emotion (last user-requested target) used by idle morphing
+    // so subtle drifts return toward a stable anchor rather than compounding.
+    float baselineValence;
+    float baselineArousal;
+
     bool initialized;
     
     // Helper methods

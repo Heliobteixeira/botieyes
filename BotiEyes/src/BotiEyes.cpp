@@ -32,6 +32,8 @@ BotiEyes::BotiEyes()
     , animationState(nullptr)
     , idleBehaviorEnabled(false)
     , lastIdleTrigger(0)
+    , baselineValence(0.0f)
+    , baselineArousal(0.5f)
     , initialized(false) {
 }
 
@@ -117,6 +119,10 @@ ErrorCode BotiEyes::setEmotion(float valence, float arousal, uint16_t duration_m
     // Clamp and validate inputs
     EmotionState::clamp(&valence, &arousal);
     
+    // Remember as baseline for idle subtle morphing
+    baselineValence = valence;
+    baselineArousal = arousal;
+
     // Set new target
     emotionState->setTarget(valence, arousal, duration_ms);
     
@@ -210,6 +216,15 @@ ErrorCode BotiEyes::confused(float intensity) {
     return setEmotion(-0.15f * intensity, 0.55f * intensity + 0.45f * (1.0f - intensity), 400);
 }
 
+ErrorCode BotiEyes::neutral(float intensity) {
+    if (intensity < 0.0f) intensity = 0.0f;
+    if (intensity > 1.0f) intensity = 1.0f;
+    // Flat affect: valence 0, arousal 0. At intensity<1 we lerp arousal
+    // toward the neutral 0.5 baseline so partial intensities read as
+    // "becoming flat" rather than jumping straight to deep torpor.
+    return setEmotion(0.0f, 0.0f * intensity + 0.5f * (1.0f - intensity), 400);
+}
+
 // === Eye Position Control ===
 
 ErrorCode BotiEyes::setEyePosition(int16_t h, int16_t v, uint16_t duration_ms) {
@@ -253,7 +268,7 @@ ErrorCode BotiEyes::lookDown() {
     return setEyePosition(0, -30, 300);
 }
 
-ErrorCode BotiEyes::neutral() {
+ErrorCode BotiEyes::lookNeutral() {
     return setEyePosition(0, 0, 300);
 }
 
@@ -419,6 +434,38 @@ void BotiEyes::updateIdleBehavior() {
         setEyePosition(h, v, saccade);
         lastGazeTrigger = now;
         nextGazeAt = 0;
+    }
+
+    // --- Subtle emotion morph scheduler -----------------------------------
+    // Living beings never hold a face perfectly still. Every few seconds we
+    // nudge the target emotion by a small bell-shaped jitter around the
+    // baseline (last user-requested emotion). Jitter scale is tiny so the
+    // expression reads the same, just no longer frozen.
+    static uint32_t nextMorphAt      = 0;
+    static uint32_t lastMorphTrigger = 0;
+
+    if (nextMorphAt == 0) {
+        uint32_t a = random(2500, 6001);
+        uint32_t b = random(2500, 6001);
+        nextMorphAt = lastMorphTrigger + (a + b) / 2;  // mean ~4.25 s
+    }
+
+    if ((int32_t)(now - nextMorphAt) >= 0) {
+        // Bell-shaped jitter via sum-of-two-uniforms centered on zero:
+        //   (r1 + r2) / 2 - mid  ->  triangular around 0
+        int16_t vJit = (random(0, 101) + random(0, 101)) / 2 - 50; // -50..+50
+        int16_t aJit = (random(0, 101) + random(0, 101)) / 2 - 50;
+
+        // Scale: valence +/- ~0.04, arousal +/- ~0.06
+        float v = baselineValence + (vJit / 50.0f) * 0.04f;
+        float a = baselineArousal + (aJit / 50.0f) * 0.06f;
+        EmotionState::clamp(&v, &a);
+
+        // Slow, breathing transition so jitter is felt, not seen
+        emotionState->setTarget(v, a, 1500);
+
+        lastMorphTrigger = now;
+        nextMorphAt = 0;
     }
 }
 

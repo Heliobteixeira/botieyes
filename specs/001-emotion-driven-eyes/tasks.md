@@ -132,13 +132,13 @@
 
 ### Implementation for User Story 5
 
-- [ ] T054 [P] [US5] Create requirements.txt in emulator/ with pygame dependency
-- [ ] T055 [P] [US5] Implement emotion_mapper.py in emulator/ porting C++ EmotionMapper logic (valence-arousal → expression parameters)
-- [ ] T056 [US5] Implement eye_renderer.py in emulator/ with Pygame drawing (ellipse, eyelid overlays matching C++ renderEyes())
-- [ ] T057 [US5] Implement ui_controls.py in emulator/ with sliders for valence, arousal, H angle, V angle
-- [ ] T058 [US5] Implement botieyes_emulator.py in emulator/ with main loop, event handling, display window (128x64 resolution)
-- [ ] T059 [US5] Add emotion helper buttons in ui_controls.py for quick emotion selection (happy, sad, angry, etc.)
-- [ ] T060 [US5] Add position helper buttons in ui_controls.py for eye position behaviors (lookLeft, lookRight, etc.)
+- [X] T054 [P] [US5] Create requirements.txt in emulator/ with pygame dependency
+- [X] T055 [P] [US5] Implement emotion_mapper.py in emulator/ porting C++ EmotionMapper logic (valence-arousal → expression parameters)
+- [X] T056 [US5] Implement eye_renderer.py in emulator/ with Pygame drawing (ellipse, eyelid overlays matching C++ renderEyes())
+- [X] T057 [US5] Implement ui_controls.py in emulator/ with sliders for valence, arousal, H angle, V angle
+- [X] T058 [US5] Implement botieyes_emulator.py in emulator/ with main loop, event handling, display window (128x64 resolution)
+- [X] T059 [US5] Add emotion helper buttons in ui_controls.py for quick emotion selection (happy, sad, angry, etc.)
+- [X] T060 [US5] Add position helper buttons in ui_controls.py for eye position behaviors (lookLeft, lookRight, etc.)
 
 **Checkpoint**: User Story 5 complete - PC emulator fully functional for development without hardware
 

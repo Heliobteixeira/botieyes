@@ -65,7 +65,7 @@ BotiEyes::BotiEyes eyes;
 // Emotion cycle state
 uint8_t currentEmotion = 0;
 uint32_t lastEmotionChange = 0;
-const uint16_t EMOTION_DURATION = 10000;  // 2 seconds per emotion
+const uint16_t EMOTION_DURATION = 3000;  // 3 seconds per emotion
 
 void setup() {
   // Initialize serial for debugging

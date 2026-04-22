@@ -354,6 +354,7 @@ void BotiEyes::updateIdleBehavior() {
 
     uint32_t now = millis();
 
+    // --- Blink scheduler ---------------------------------------------------
     // Next blink time is pre-computed; re-draw only after each blink fires.
     // Distribution: average of 3 uniform samples over [MIN..MAX] gives a
     // bell-shaped (Irwin-Hall) curve centered at (MIN+MAX)/2, naturally
@@ -375,6 +376,49 @@ void BotiEyes::updateIdleBehavior() {
         blink((uint16_t)d);
         lastIdleTrigger = now;
         nextBlinkAt = 0;  // sample a fresh interval next frame
+    }
+
+    // --- Gaze scheduler ----------------------------------------------------
+    // Humans make small spontaneous gaze shifts (saccades + micro-saccades)
+    // every ~0.5-4 s while at rest. Most are small drifts near center; a
+    // minority are large look-around shifts that are quickly followed by a
+    // return toward center. Movement itself is fast (80-150 ms saccade).
+    static uint32_t nextGazeAt      = 0;
+    static uint32_t lastGazeTrigger = 0;
+    static bool     pendingRecenter = false;
+
+    if (nextGazeAt == 0) {
+        if (pendingRecenter) {
+            // Short hold after a large look-away, then return toward center
+            nextGazeAt = lastGazeTrigger + (uint32_t)random(400, 1201);
+        } else {
+            uint32_t a = random(500, 4001);
+            uint32_t b = random(500, 4001);
+            nextGazeAt = lastGazeTrigger + (a + b) / 2;  // mean ~2.25 s
+        }
+    }
+
+    if ((int32_t)(now - nextGazeAt) >= 0) {
+        int16_t h, v;
+        if (pendingRecenter) {
+            // Small drift centered on 0 -> effectively a re-center
+            h = (int16_t)random(-8, 9);
+            v = (int16_t)random(-4, 5);
+            pendingRecenter = false;
+        } else if (random(0, 100) < 80) {
+            // Small drift near center: +/- 15 deg horiz, +/- 8 deg vert
+            h = (int16_t)random(-15, 16);
+            v = (int16_t)random(-8, 9);
+        } else {
+            // Larger look-around: +/- 45 deg horiz, +/- 20 deg vert
+            h = (int16_t)random(-45, 46);
+            v = (int16_t)random(-20, 21);
+            pendingRecenter = true;  // next shift re-centers
+        }
+        uint16_t saccade = (uint16_t)random(80, 151);
+        setEyePosition(h, v, saccade);
+        lastGazeTrigger = now;
+        nextGazeAt = 0;
     }
 }
 

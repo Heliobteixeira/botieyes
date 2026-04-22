@@ -12,6 +12,10 @@ Usage:
 
 import pygame
 import sys
+import io
+import os
+import json
+import datetime
 from emotion_mapper import EmotionMapper
 from eye_renderer import EyeRenderer
 from ui_controls import UIControls
@@ -157,6 +161,9 @@ class BotiEyesEmulator:
                     self.running = False
                 elif event.key == pygame.K_SPACE:
                     self._enter_auto()
+                elif event.key == pygame.K_c:
+                    path = self.save_frame()
+                    print(f"[CAPTURE] Saved frame + state to {path}")
             self.ui.handle_event(event)
 
     def update(self):
@@ -233,7 +240,7 @@ class BotiEyesEmulator:
             f"H:{int(round(h_pos)):+3d}deg  V:{int(round(v_pos)):+3d}deg",
             True, (180, 180, 180))
         self.screen.blit(pos_info, (10, 52))
-        hint = self.small.render("SPACE: auto-cycle   ESC: quit",
+        hint = self.small.render("SPACE: auto   C: capture   ESC: quit",
                                  True, (120, 120, 120))
         self.screen.blit(hint, (10, self.display_height * self.scale - 22))
 
@@ -242,11 +249,66 @@ class BotiEyesEmulator:
 
         pygame.display.flip()
 
+    # ----- AI feedback hooks (User Story 2) -----
+
+    def captureFrame(self):
+        """Return the current 128x64 OLED frame as PNG bytes.
+
+        Uses the low-resolution source surface (not the upscaled one) so AI
+        tools see exactly what the embedded display would show.
+        """
+        buf = io.BytesIO()
+        low = self.renderer._low
+        pygame.image.save(low, buf, "PNG")
+        return buf.getvalue()
+
+    def getExpressionState(self):
+        """Return a JSON-serializable dict describing the current render state."""
+        v, a, asym = self._current_emotion()
+        h_pos, v_pos = self._current_position()
+        p = self.mapper.map_emotion_to_expression(v, a)
+        p.asymmetry = asym
+        if self.mode == "auto":
+            label = AUTO_EMOTIONS[self.current_idx][0]
+        else:
+            label = self.manual_emotion_label or "(custom)"
+        return {
+            "mode": self.mode,
+            "emotion_label": label,
+            "valence": round(v, 4),
+            "arousal": round(a, 4),
+            "position": {
+                "h_deg": int(round(h_pos)),
+                "v_deg": int(round(v_pos)),
+            },
+            "expression_params": {
+                "eye_width": p.eye_width,
+                "eye_height": p.eye_height,
+                "lid_top_coverage": round(p.lid_top_coverage, 4),
+                "lid_bottom_coverage": round(p.lid_bottom_coverage, 4),
+                "y_offset": p.y_offset,
+                "spacing_adjust": p.spacing_adjust,
+                "asymmetry": round(p.asymmetry, 4),
+            },
+        }
+
+    def save_frame(self, out_dir="captures"):
+        """Save current frame as PNG + state as JSON. Returns the PNG path."""
+        os.makedirs(out_dir, exist_ok=True)
+        ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+        png_path = os.path.join(out_dir, f"frame_{ts}.png")
+        json_path = os.path.join(out_dir, f"frame_{ts}.json")
+        with open(png_path, "wb") as f:
+            f.write(self.captureFrame())
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(self.getExpressionState(), f, indent=2)
+        return png_path
+
     def run(self):
         print("BotiEyes Emulator")
         print("  AUTO mode cycles 12 emotions.")
         print("  Click a button / drag a slider to enter MANUAL mode.")
-        print("  SPACE = resume AUTO,  ESC = quit.")
+        print("  SPACE = resume AUTO,  C = capture frame+state,  ESC = quit.")
         while self.running:
             self.handle_events()
             self.update()

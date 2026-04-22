@@ -66,3 +66,7 @@ docs/_build/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Emulator frame captures (User Story 2)
+emulator/captures/
+captures/

@@ -152,10 +152,10 @@
 
 ### Implementation for User Story 2
 
-- [ ] T061 [US2] Implement captureFrame() method in botieyes_emulator.py returning PNG byte array using pygame.image.tostring() in emulator/
-- [ ] T062 [US2] Implement getExpressionState() method in botieyes_emulator.py returning JSON with current valence, arousal, expression parameters, eye position in emulator/
-- [ ] T063 [US2] Add keyboard shortcut (e.g., 'C') to save current frame to file in botieyes_emulator.py in emulator/
-- [ ] T064 [US2] Add display overlay showing current state (valence, arousal, H, V) in botieyes_emulator.py in emulator/
+- [X] T061 [US2] Implement captureFrame() method in botieyes_emulator.py returning PNG byte array using pygame.image.tostring() in emulator/
+- [X] T062 [US2] Implement getExpressionState() method in botieyes_emulator.py returning JSON with current valence, arousal, expression parameters, eye position in emulator/
+- [X] T063 [US2] Add keyboard shortcut (e.g., 'C') to save current frame to file in botieyes_emulator.py in emulator/
+- [X] T064 [US2] Add display overlay showing current state (valence, arousal, H, V) in botieyes_emulator.py in emulator/
 
 **Checkpoint**: User Story 2 complete - AI can capture frames and inspect state for iterative development
 

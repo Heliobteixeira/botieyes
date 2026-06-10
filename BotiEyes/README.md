@@ -110,8 +110,62 @@ eyes.enableIdleBehavior(true);  // Enable micro-blinks every 3-5 seconds
 - **BasicEmotion.ino**: Cycle through all 12 emotion presets
 - **EyePosition.ino**: Demonstrate eye gaze control and behaviors
 - **SerialControl.ino**: Control via serial commands (AI integration ready)
+- **NetworkControl.ino** (ESP32): Remote control over Wi-Fi/UDP from another machine on the same LAN
+
+## Network Control (ESP32)
+
+On ESP32 boards (e.g. TTGO LoRa32), an optional UDP control service lets a
+controller on the **same local network** drive emotions, gaze, presets,
+blink/wink, and idle in real time with low latency and automatic recovery.
+
+```cpp
+#include <net/BotiEyesServer.h>
+
+BotiEyes::BotiEyes eyes;
+BotiEyes::net::BotiEyesServer server(eyes);
+
+// after WiFi.begin() connects:
+server.begin();            // UDP port 4210
+
+void loop() {
+  server.poll();           // non-blocking: drain inbound datagrams
+  server.applyPending();   // apply newest-wins targets + queued actions
+  eyes.update();           // render a frame
+}
+```
+
+The device shows its IP on the OLED after joining Wi-Fi. Drive it with the
+reference Python controller (standard library only):
+
+```bash
+cd controller/
+python cli.py --host <device-ip>   # then type: emotion 0.35 0.55
+```
+
+- Best-effort streaming (newest-wins) for emotion/gaze → low latency.
+- ACK'd discrete commands (preset/blink/wink/idle), ~1 s heartbeat,
+  5 s no-contact timeout with automatic idle fallback and lock takeover.
+- Single active controller at a time; a second controller is rejected
+  with `IN_USE`.
+
+See [quickstart](../specs/002-esp32-network-service/quickstart.md) and the
+[protocol contract](../specs/002-esp32-network-service/contracts/network-protocol.md)
+for full details.
+
+> ⚠️ **Security / trust model:** The network service has **no authentication or
+> encryption** and is intended for a **trusted LAN only**. Any host that can
+> reach UDP port 4210 can control the eyes. Do **not** expose port 4210 to the
+> public Internet or any untrusted network.
+
+The pure protocol logic (`CommandCodec`, `SessionManager`) is host-testable:
+
+```bash
+cd tests/net/ && make          # C++ codec + session tests
+cd controller/ && python test_client.py   # Python framing tests
+```
 
 ## Memory Requirements
+
 
 | Platform | Total SRAM | Library RAM | User Code Available | Status |
 |----------|------------|-------------|---------------------|--------|

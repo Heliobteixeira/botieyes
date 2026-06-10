@@ -12,6 +12,9 @@ ErrorCode	KEYWORD1
 EmotionState	KEYWORD1
 EyePositionState	KEYWORD1
 ExpressionParameters	KEYWORD1
+BotiEyesServer	KEYWORD1
+CommandCodec	KEYWORD1
+SessionManager	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
@@ -48,6 +51,11 @@ lookRight	KEYWORD2
 lookUp	KEYWORD2
 lookDown	KEYWORD2
 neutral	KEYWORD2
+
+# Network Control (ESP32)
+begin	KEYWORD2
+poll	KEYWORD2
+applyPending	KEYWORD2
 
 #######################################
 # Constants (LITERAL1)

@@ -1,0 +1,7 @@
+# BotiEyes reference controller client.
+#
+# Uses only the Python standard library (socket, struct, threading) — no
+# third-party runtime dependencies. This file exists for parity / tooling.
+#
+# Dev/test only:
+#   pytest

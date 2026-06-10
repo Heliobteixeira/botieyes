@@ -58,6 +58,11 @@ htmlcov/
 .coverage
 .pytest_cache/
 
+# Host-native network tests (compiled binaries, no extension)
+tests/net/test_command_codec
+tests/net/test_session_manager
+*.dSYM/
+
 # Documentation Build
 docs/_build/
 *.pdf

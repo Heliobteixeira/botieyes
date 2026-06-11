@@ -1,4 +1,5 @@
 #include "EyePositionState.h"
+#include "PlatformTime.h"
 
 namespace BotiEyes {
 
@@ -19,7 +20,7 @@ void EyePositionState::setTarget(int16_t h, int16_t v, uint16_t duration_ms) {
     targetH = h;
     targetV = v;
     duration = duration_ms;
-    startTime = millis();
+    startTime = platform::nowMs();
 }
 
 void EyePositionState::updateInterpolation(float t) {
@@ -37,7 +38,7 @@ void EyePositionState::updateInterpolation(float t) {
 
 bool EyePositionState::isComplete() const {
     if (duration == 0) return true;
-    return (millis() - startTime) >= duration;
+    return (platform::nowMs() - startTime) >= duration;
 }
 
 void EyePositionState::clamp(int16_t* h, int16_t* v) {

@@ -1,7 +1,7 @@
 #ifndef EYE_POSITION_STATE_H
 #define EYE_POSITION_STATE_H
 
-#include <Arduino.h>
+#include <stdint.h>
 
 namespace BotiEyes {
 
@@ -24,7 +24,7 @@ struct EyePositionState {
     int16_t targetV;
     
     // Interpolation state
-    uint32_t startTime;      // Interpolation start (millis())
+    uint32_t startTime;      // Interpolation start (ms tick)
     uint16_t duration;       // Transition duration (default: 300ms)
     
     /**

@@ -5,6 +5,7 @@ Auto-generated from all feature plans. Last updated: 2026-04-17
 ## Active Technologies
 
 - C++ (Arduino 1.8+/PlatformIO) for embedded library; Python 3.8+ for PC emulator + Adafruit GFX (embedded rendering only); Pygame (emulator only) (001-emotion-driven-eyes)
+- C++ (Arduino/PlatformIO, ESP32 core) network control layer + Python 3.8+ reference controller client + ESP32 Wi-Fi (WiFi/WiFiUDP); stdlib socket (controller) (002-esp32-network-service)
 
 ## Project Structure
 
@@ -23,6 +24,7 @@ C++ (Arduino 1.8+/PlatformIO) for embedded library; Python 3.8+ for PC emulator:
 
 ## Recent Changes
 
+- 002-esp32-network-service: Added ESP32 UDP network control service (best-effort streaming + acks/heartbeats, single-controller lock, 5 s timeout) layered on the existing BotiEyes API
 - 001-emotion-driven-eyes: Added C++ (Arduino 1.8+/PlatformIO) for embedded library; Python 3.8+ for PC emulator + Adafruit GFX (embedded rendering only); Pygame (emulator only)
 
 <!-- MANUAL ADDITIONS START -->

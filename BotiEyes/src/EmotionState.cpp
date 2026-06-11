@@ -1,4 +1,5 @@
 #include "EmotionState.h"
+#include "PlatformTime.h"
 
 namespace BotiEyes {
 
@@ -19,7 +20,7 @@ void EmotionState::setTarget(float valence, float arousal, uint16_t duration_ms)
     targetValence = valence;
     targetArousal = arousal;
     duration = duration_ms;
-    startTime = millis();
+    startTime = platform::nowMs();
 }
 
 void EmotionState::updateInterpolation(float t) {
@@ -37,7 +38,7 @@ void EmotionState::updateInterpolation(float t) {
 
 bool EmotionState::isComplete() const {
     if (duration == 0) return true;
-    return (millis() - startTime) >= duration;
+    return (platform::nowMs() - startTime) >= duration;
 }
 
 void EmotionState::clamp(float* valence, float* arousal) {

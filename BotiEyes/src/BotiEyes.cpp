@@ -5,7 +5,19 @@
 #include "EmotionMapper.h"
 #include "Interpolator.h"
 #include "RenderingHelpers.h"
+#include "PlatformTime.h"
+#include "PlatformRandom.h"
 #include <Adafruit_GFX.h>
+#include <algorithm>
+
+namespace {
+template <typename T>
+inline T clampTo(T value, T low, T high) {
+    if (value < low) return low;
+    if (value > high) return high;
+    return value;
+}
+}
 
 namespace BotiEyes {
 
@@ -278,7 +290,7 @@ ErrorCode BotiEyes::blink(uint16_t duration_ms) {
     if (!initialized) return INVALID_INPUT;
     
     animationState->type = ANIM_BLINK;
-    animationState->startTime = millis();
+    animationState->startTime = platform::nowMs();
     animationState->duration = duration_ms;
     animationState->progress = 0.0f;
     animationState->active = true;
@@ -290,7 +302,7 @@ ErrorCode BotiEyes::wink(EyeSide eye, uint16_t duration_ms) {
     if (!initialized) return INVALID_INPUT;
     
     animationState->type = (eye == LEFT) ? ANIM_WINK_LEFT : ANIM_WINK_RIGHT;
-    animationState->startTime = millis();
+    animationState->startTime = platform::nowMs();
     animationState->duration = duration_ms;
     animationState->progress = 0.0f;
     animationState->active = true;
@@ -303,7 +315,7 @@ ErrorCode BotiEyes::enableIdleBehavior(bool enable) {
     
     idleBehaviorEnabled = enable;
     if (enable) {
-        lastIdleTrigger = millis();
+        lastIdleTrigger = platform::nowMs();
     }
     
     return OK;
@@ -329,7 +341,7 @@ ErrorCode BotiEyes::update() {
 // === Private Helper Methods ===
 
 void BotiEyes::updateInterpolation() {
-    uint32_t now = millis();
+    uint32_t now = platform::nowMs();
     
     // Update emotion interpolation
     if (!emotionState->isComplete()) {
@@ -351,7 +363,7 @@ void BotiEyes::updateInterpolation() {
 void BotiEyes::updateAnimation() {
     if (!animationState->active) return;
     
-    uint32_t now = millis();
+    uint32_t now = platform::nowMs();
     uint32_t elapsed = now - animationState->startTime;
     
     if (elapsed >= animationState->duration) {
@@ -367,7 +379,7 @@ void BotiEyes::updateAnimation() {
 void BotiEyes::updateIdleBehavior() {
     if (!idleBehaviorEnabled) return;
 
-    uint32_t now = millis();
+    uint32_t now = platform::nowMs();
 
     // --- Blink scheduler ---------------------------------------------------
     // Next blink time is pre-computed; re-draw only after each blink fires.
@@ -380,14 +392,15 @@ void BotiEyes::updateIdleBehavior() {
     static uint32_t nextBlinkAt = 0;
 
     if (nextBlinkAt == 0) {
-        uint32_t a = random(2000, 8001);
-        uint32_t b = random(2000, 8001);
-        uint32_t c = random(2000, 8001);
+        uint32_t a = (uint32_t)platform::randomRange(2000, 8001);
+        uint32_t b = (uint32_t)platform::randomRange(2000, 8001);
+        uint32_t c = (uint32_t)platform::randomRange(2000, 8001);
         nextBlinkAt = lastIdleTrigger + (a + b + c) / 3;
     }
 
     if ((int32_t)(now - nextBlinkAt) >= 0) {
-        uint32_t d = (random(100, 301) + random(100, 301)) / 2;  // mean ~200
+        uint32_t d = ((uint32_t)platform::randomRange(100, 301) +
+                  (uint32_t)platform::randomRange(100, 301)) / 2;  // mean ~200
         blink((uint16_t)d);
         lastIdleTrigger = now;
         nextBlinkAt = 0;  // sample a fresh interval next frame
@@ -405,10 +418,10 @@ void BotiEyes::updateIdleBehavior() {
     if (nextGazeAt == 0) {
         if (pendingRecenter) {
             // Short hold after a large look-away, then return toward center
-            nextGazeAt = lastGazeTrigger + (uint32_t)random(400, 1201);
+            nextGazeAt = lastGazeTrigger + (uint32_t)platform::randomRange(400, 1201);
         } else {
-            uint32_t a = random(500, 4001);
-            uint32_t b = random(500, 4001);
+            uint32_t a = (uint32_t)platform::randomRange(500, 4001);
+            uint32_t b = (uint32_t)platform::randomRange(500, 4001);
             nextGazeAt = lastGazeTrigger + (a + b) / 2;  // mean ~2.25 s
         }
     }
@@ -417,20 +430,20 @@ void BotiEyes::updateIdleBehavior() {
         int16_t h, v;
         if (pendingRecenter) {
             // Small drift centered on 0 -> effectively a re-center
-            h = (int16_t)random(-8, 9);
-            v = (int16_t)random(-4, 5);
+            h = (int16_t)platform::randomRange(-8, 9);
+            v = (int16_t)platform::randomRange(-4, 5);
             pendingRecenter = false;
-        } else if (random(0, 100) < 80) {
+        } else if (platform::randomRange(0, 100) < 80) {
             // Small drift near center: +/- 15 deg horiz, +/- 8 deg vert
-            h = (int16_t)random(-15, 16);
-            v = (int16_t)random(-8, 9);
+            h = (int16_t)platform::randomRange(-15, 16);
+            v = (int16_t)platform::randomRange(-8, 9);
         } else {
             // Larger look-around: +/- 45 deg horiz, +/- 20 deg vert
-            h = (int16_t)random(-45, 46);
-            v = (int16_t)random(-20, 21);
+            h = (int16_t)platform::randomRange(-45, 46);
+            v = (int16_t)platform::randomRange(-20, 21);
             pendingRecenter = true;  // next shift re-centers
         }
-        uint16_t saccade = (uint16_t)random(80, 151);
+        uint16_t saccade = (uint16_t)platform::randomRange(80, 151);
         setEyePosition(h, v, saccade);
         lastGazeTrigger = now;
         nextGazeAt = 0;
@@ -445,16 +458,18 @@ void BotiEyes::updateIdleBehavior() {
     static uint32_t lastMorphTrigger = 0;
 
     if (nextMorphAt == 0) {
-        uint32_t a = random(2500, 6001);
-        uint32_t b = random(2500, 6001);
+        uint32_t a = (uint32_t)platform::randomRange(2500, 6001);
+        uint32_t b = (uint32_t)platform::randomRange(2500, 6001);
         nextMorphAt = lastMorphTrigger + (a + b) / 2;  // mean ~4.25 s
     }
 
     if ((int32_t)(now - nextMorphAt) >= 0) {
         // Bell-shaped jitter via sum-of-two-uniforms centered on zero:
         //   (r1 + r2) / 2 - mid  ->  triangular around 0
-        int16_t vJit = (random(0, 101) + random(0, 101)) / 2 - 50; // -50..+50
-        int16_t aJit = (random(0, 101) + random(0, 101)) / 2 - 50;
+        int16_t vJit = (int16_t)(((int32_t)platform::randomRange(0, 101) +
+                      (int32_t)platform::randomRange(0, 101)) / 2 - 50); // -50..+50
+        int16_t aJit = (int16_t)(((int32_t)platform::randomRange(0, 101) +
+                      (int32_t)platform::randomRange(0, 101)) / 2 - 50);
 
         // Scale: valence +/- ~0.04, arousal +/- ~0.06
         float v = baselineValence + (vJit / 50.0f) * 0.04f;
@@ -534,13 +549,13 @@ void BotiEyes::renderEyes() {
     if (params.asymmetry != 0.0f) {
         // Negative asymmetry -> left eye smaller, right eye bigger (Confused/Thinking)
         float a = params.asymmetry;
-        lH = (uint8_t)constrain((int)(lH * (1.0f + a)), 4, 60);
-        rH = (uint8_t)constrain((int)(rH * (1.0f - a)), 4, 60);
+        lH = (uint8_t)clampTo<int>((int)(lH * (1.0f + a)), 4, 60);
+        rH = (uint8_t)clampTo<int>((int)(rH * (1.0f - a)), 4, 60);
     }
 
     // Apply blink/wink vertical scaling (min 2px so we still see a line)
-    lH = (uint8_t)max(2, (int)(lH * leftOpen));
-    rH = (uint8_t)max(2, (int)(rH * rightOpen));
+    lH = (uint8_t)std::max(2, (int)(lH * leftOpen));
+    rH = (uint8_t)std::max(2, (int)(rH * rightOpen));
 
     // 6. Clear and draw
     display->fillScreen(0);

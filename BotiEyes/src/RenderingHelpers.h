@@ -1,7 +1,7 @@
 #ifndef RENDERING_HELPERS_H
 #define RENDERING_HELPERS_H
 
-#include <Arduino.h>
+#include <stdint.h>
 #include <Adafruit_GFX.h>
 
 namespace BotiEyes {

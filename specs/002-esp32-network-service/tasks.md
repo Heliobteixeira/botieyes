@@ -17,7 +17,8 @@ session state machine, plus Python client tests.
 ## Path Conventions
 
 - Device service: `BotiEyes/src/net/`
-- Device example: `BotiEyes/examples/NetworkControl/`
+- Device app (primary): `esp-idf/`
+- Device example (fallback): `BotiEyes/examples/NetworkControl/`
 - Reference controller: `controller/`
 - Host-native tests: `tests/net/`
 
@@ -70,10 +71,10 @@ newest valid target within the latency budget; out-of-range rejected with state 
 - [X] T013 [US1] Create `BotiEyesServer` transport adapter in `BotiEyes/src/net/BotiEyesServer.h` (ESP32 `#ifdef`-gated; holds `BotiEyes&`, `CommandCodec`, `SessionManager`; `begin(port)`, non-blocking `poll()`, `applyPending()`)
 - [X] T014 [US1] Implement non-blocking UDP receive + decode loop in `BotiEyes/src/net/BotiEyesServer.cpp` using `WiFiUDP` (read available datagrams, decode, route streaming targets into `PendingTargets`) (depends on T013, T006, T010)
 - [X] T015 [US1] Map `SET_EMOTION` pending target to `BotiEyes::setEmotion(valence, arousal, duration_ms)` in `applyPending()` once per frame in `BotiEyes/src/net/BotiEyesServer.cpp` (depends on T014)
-- [X] T016 [US1] Create example sketch `BotiEyes/examples/NetworkControl/NetworkControl.ino` — Wi-Fi join, init BotiEyes + SSD1306 (SDA=4/SCL=15/RST=16), start server on port 4210, render loop calling `server.poll()` + `eyes.update()` at ≥20 FPS
+- [X] T016 [US1] Create ESP-IDF app entry in `esp-idf/main/` (with fallback sketch retained at `BotiEyes/examples/NetworkControl/NetworkControl.ino`) — Wi-Fi join, init BotiEyes + SSD1306 (SDA=4/SCL=15/RST=16), start server on port 4210, render loop calling `server.poll()` + `eyes.update()` at ≥20 FPS
 - [X] T017 [P] [US1] Implement `controller/botieyes_client.py` `set_emotion()` + low-level UDP send framing (fixed-point encode) per protocol
 - [X] T018 [P] [US1] Add `emotion` command to `controller/cli.py` interactive loop
-- [ ] T019 [US1] On-hardware visual validation on TTGO LoRa32 — confirm emotion updates render in <100 ms and rapid streaming shows newest target without stalling (SC-001, SC-002); per repo commit policy before any commit **(requires physical board — flash NetworkControl.ino)**
+- [ ] T019 [US1] On-hardware visual validation on TTGO LoRa32 — confirm emotion updates render in <100 ms and rapid streaming shows newest target without stalling (SC-001, SC-002); per repo commit policy before any commit **(requires physical board — flash ESP-IDF app in `esp-idf/`)**
 
 **Checkpoint**: MVP — remote emotion control works end to end and is independently demoable.
 
@@ -95,7 +96,7 @@ state automatically within 10 s and eyes stay animated throughout.
 
 - [X] T022 [US2] Implement heartbeat handling + liveness tracking in `BotiEyes/src/net/BotiEyesServer.cpp` (`HEARTBEAT` opcode refreshes `lastContactMs`) (depends on T014)
 - [X] T023 [US2] Implement idle fallback in `BotiEyes/src/net/BotiEyesServer.cpp` — on lock timeout / no controller, call `enableIdleBehavior(true)` and keep autonomous `update()` running (FR-011, FR-016) (depends on T009, T015)
-- [X] T024 [US2] Ensure non-blocking guarantee: `poll()` never blocks the render loop even with no/lost network; verify Wi-Fi reconnect retry runs in background in `NetworkControl.ino` (FR-009, FR-010)
+- [X] T024 [US2] Ensure non-blocking guarantee: `poll()` never blocks the render loop even with no/lost network; verify Wi-Fi reconnect retry runs in background in `esp-idf/main/` runtime (FR-009, FR-010)
 - [X] T025 [P] [US2] Implement automatic ~1 s heartbeat thread/timer and re-acquire-on-timeout in `controller/botieyes_client.py`
 - [ ] T026 [US2] On-hardware resilience validation on TTGO LoRa32 — drop controller Wi-Fi 10–30 s, kill/restart controller; confirm auto-recovery ≤10 s and eyes never freeze (SC-003, SC-004); per repo commit policy **(requires physical board)**
 
@@ -111,7 +112,7 @@ state automatically within 10 s and eyes stay animated throughout.
 
 ### Implementation for User Story 3
 
-- [X] T027 [US3] Render the device IP address on the SSD1306 OLED after Wi-Fi join in `BotiEyes/examples/NetworkControl/NetworkControl.ino` (FR-015)
+- [X] T027 [US3] Render the device IP address on the SSD1306 OLED after Wi-Fi join in ESP-IDF app runtime (`esp-idf/main/`) (FR-015)
 - [X] T028 [US3] Implement `ACQUIRE`/`RELEASE` handling + "in use" NAK in `BotiEyes/src/net/BotiEyesServer.cpp` (single active session) (depends on T009, T014)
 - [X] T029 [P] [US3] Implement session acquire/release in `controller/botieyes_client.py` (context-manager `__enter__`/`__exit__`) and `--host` argument in `controller/cli.py`
 - [ ] T030 [US3] On-hardware validation — connect using the OLED-shown IP on first attempt; confirm second controller is rejected with `IN_USE` (SC-005, FR-017); per repo commit policy **(requires physical board)**
@@ -173,7 +174,7 @@ state automatically within 10 s and eyes stay animated throughout.
 - [X] T045 [P] Add a "Network Control" section to `BotiEyes/README.md` linking to [quickstart.md](quickstart.md) and [contracts/network-protocol.md](contracts/network-protocol.md)
 - [X] T046 Verify additive guarantee — existing examples (BasicEmotion, etc.) still build unchanged and non-ESP32 builds exclude `BotiEyesServer` via `#ifdef` (FR-020)
 - [ ] T047 Execute full [quickstart.md](quickstart.md) validation end to end on TTGO LoRa32; per repo commit policy **(requires physical board)**
-- [X] T048 [P] Document the trusted-LAN-only / no-auth constraint (FR-018) in `BotiEyes/examples/NetworkControl/NetworkControl.ino` header comment and the README "Network Control" section — warn against exposing UDP port 4210 to untrusted/public networks
+- [X] T048 [P] Document the trusted-LAN-only / no-auth constraint (FR-018) in ESP-IDF app docs and README "Network Control" section (fallback sketch header kept aligned) — warn against exposing UDP port 4210 to untrusted/public networks
 
 ---
 

@@ -1,10 +1,17 @@
 // BotiEyesServer — ESP32 UDP transport adapter implementation.
 
-#ifdef ESP32
+#if defined(ESP32) || defined(ESP_PLATFORM)
 
 #include "BotiEyesServer.h"
+#include "../PlatformTime.h"
 
-#include <Arduino.h>   // millis()
+#if defined(ESP_PLATFORM)
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <lwip/inet.h>
+#include <lwip/sockets.h>
+#endif
 
 namespace BotiEyes {
 namespace net {
@@ -32,10 +39,21 @@ void applyPreset(BotiEyes& eyes, uint8_t presetId, float intensity) {
     }
 }
 
+#if defined(ESP_PLATFORM)
+static bool setSocketNonBlocking(int fd) {
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags < 0) return false;
+    return fcntl(fd, F_SETFL, flags | O_NONBLOCK) == 0;
+}
+#endif
+
 } // namespace
 
 BotiEyesServer::BotiEyesServer(BotiEyes& eyes)
     : eyes_(eyes),
+#if defined(ESP_PLATFORM)
+      udpSock_(-1),
+#endif
       port_(DEFAULT_UDP_PORT),
       started_(false),
       idleFallbackActive_(true),
@@ -43,9 +61,36 @@ BotiEyesServer::BotiEyesServer(BotiEyes& eyes)
 
 void BotiEyesServer::begin(uint16_t port) {
     port_ = port;
+
+#if defined(ESP_PLATFORM)
+    if (udpSock_ >= 0) {
+        close(udpSock_);
+        udpSock_ = -1;
+    }
+
+    udpSock_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (udpSock_ < 0) {
+        started_ = false;
+        return;
+    }
+
+    sockaddr_in localAddr;
+    localAddr.sin_family = AF_INET;
+    localAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    localAddr.sin_port = htons(port_);
+    if (bind(udpSock_, (const sockaddr*)&localAddr, sizeof(localAddr)) != 0 ||
+        !setSocketNonBlocking(udpSock_)) {
+        close(udpSock_);
+        udpSock_ = -1;
+        started_ = false;
+        return;
+    }
+#elif defined(ESP32)
     udp_.begin(port_);
+#endif
+
     started_ = true;
-    startMs_ = millis();
+    startMs_ = platform::nowMs();
     // Until a controller acquires the lock, run autonomous idle behavior.
     idleFallbackActive_ = true;
     eyes_.enableIdleBehavior(true);
@@ -55,8 +100,32 @@ void BotiEyesServer::poll() {
     if (!started_) {
         return;
     }
-    const uint32_t nowMs = millis();
+    const uint32_t nowMs = platform::nowMs();
 
+#if defined(ESP_PLATFORM)
+    if (udpSock_ < 0) {
+        return;
+    }
+
+    // Drain all currently-available datagrams; never block.
+    for (;;) {
+        uint8_t buf[MAX_FRAME_SIZE];
+        sockaddr_in remoteAddr;
+        socklen_t addrLen = sizeof(remoteAddr);
+        const int n = recvfrom(udpSock_, buf, sizeof(buf), 0,
+                               (sockaddr*)&remoteAddr, &addrLen);
+        if (n <= 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                break;
+            }
+            break;
+        }
+
+        const uint32_t ip = ntohl(remoteAddr.sin_addr.s_addr);
+        const uint16_t rport = ntohs(remoteAddr.sin_port);
+        handleDatagram(buf, (size_t)n, ip, rport, nowMs);
+    }
+#elif defined(ESP32)
     // Drain every datagram currently buffered; never block waiting for more.
     int packetSize = udp_.parsePacket();
     while (packetSize > 0) {
@@ -73,6 +142,7 @@ void BotiEyesServer::poll() {
         }
         packetSize = udp_.parsePacket();
     }
+#endif
 }
 
 void BotiEyesServer::handleDatagram(const uint8_t* buf, size_t len,
@@ -162,7 +232,7 @@ void BotiEyesServer::applyPending() {
     if (!started_) {
         return;
     }
-    const uint32_t nowMs = millis();
+    const uint32_t nowMs = platform::nowMs();
 
     // Drive lock liveness; on active→released transition fall back to idle.
     if (session_.checkTimeout(nowMs)) {
@@ -207,10 +277,21 @@ void BotiEyesServer::sendAck(uint32_t ip, uint16_t port, uint32_t seq,
                              bool accepted, uint8_t reason) {
     uint8_t buf[SIZE_ACK];
     size_t n = CommandCodec::encodeAck(seq, accepted, reason, buf);
+#if defined(ESP_PLATFORM)
+    if (udpSock_ < 0) {
+        return;
+    }
+    sockaddr_in dest;
+    dest.sin_family = AF_INET;
+    dest.sin_addr.s_addr = htonl(ip);
+    dest.sin_port = htons(port);
+    sendto(udpSock_, buf, n, 0, (const sockaddr*)&dest, sizeof(dest));
+#elif defined(ESP32)
     IPAddress dest(ip);
     udp_.beginPacket(dest, port);
     udp_.write(buf, n);
     udp_.endPacket();
+#endif
 }
 
 void BotiEyesServer::sendStatus(uint32_t ip, uint16_t port) {
@@ -225,18 +306,29 @@ void BotiEyesServer::sendStatus(uint32_t ip, uint16_t port) {
     s.gazeH = h;
     s.gazeV = v;
     s.idleEnabled = idleFallbackActive_ ? 1 : 0;
-    s.connectionHealthy = session_.isActive(millis()) ? 1 : 0;
-    s.uptimeMs = millis() - startMs_;
+    s.connectionHealthy = session_.isActive(platform::nowMs()) ? 1 : 0;
+    s.uptimeMs = platform::nowMs() - startMs_;
 
     uint8_t buf[SIZE_STATUS];
     size_t n = CommandCodec::encodeStatus(s, buf);
+#if defined(ESP_PLATFORM)
+    if (udpSock_ < 0) {
+        return;
+    }
+    sockaddr_in dest;
+    dest.sin_family = AF_INET;
+    dest.sin_addr.s_addr = htonl(ip);
+    dest.sin_port = htons(port);
+    sendto(udpSock_, buf, n, 0, (const sockaddr*)&dest, sizeof(dest));
+#elif defined(ESP32)
     IPAddress dest(ip);
     udp_.beginPacket(dest, port);
     udp_.write(buf, n);
     udp_.endPacket();
+#endif
 }
 
 } // namespace net
 } // namespace BotiEyes
 
-#endif // ESP32
+#endif // ESP32 || ESP_PLATFORM

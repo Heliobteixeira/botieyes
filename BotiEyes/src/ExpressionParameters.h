@@ -1,7 +1,7 @@
 #ifndef EXPRESSION_PARAMETERS_H
 #define EXPRESSION_PARAMETERS_H
 
-#include <Arduino.h>
+#include <stdint.h>
 
 namespace BotiEyes {
 

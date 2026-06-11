@@ -1,7 +1,7 @@
 #ifndef DISPLAY_CONFIG_H
 #define DISPLAY_CONFIG_H
 
-#include <Arduino.h>
+#include <stdint.h>
 
 namespace BotiEyes {
 

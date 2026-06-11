@@ -1,0 +1,111 @@
+menu "BotiEyes Network Control"
+
+config BOTIEYES_WIFI_SSID
+    string "Wi-Fi SSID"
+    default ""
+    help
+        SSID used by the ESP32 station mode connection.
+
+config BOTIEYES_WIFI_PASSWORD
+    string "Wi-Fi password"
+    default ""
+    help
+        Password for the configured SSID.
+
+config BOTIEYES_UDP_PORT
+    int "UDP control port"
+    range 1 65535
+    default 4210
+    help
+        UDP port for the BotiEyes network control service.
+
+config BOTIEYES_STATUS_LED_PIN
+    int "Status LED GPIO pin"
+    range -1 48
+    default 38
+    help
+        Optional GPIO used as a boot/status LED. Set to -1 to disable.
+
+config BOTIEYES_FRAME_INTERVAL_MS
+    int "Render frame interval (ms)"
+    range 10 1000
+    default 40
+    help
+        Main loop period in milliseconds. 40 ms ~= 25 FPS.
+
+choice BOTIEYES_OLED_PROTOCOL
+    prompt "OLED communication protocol"
+    default BOTIEYES_OLED_PROTOCOL_I2C
+    help
+        Select I2C or SPI interface for the OLED display.
+
+config BOTIEYES_OLED_PROTOCOL_I2C
+    bool "I2C"
+    help
+        Use I2C interface (typical for small OLEDs).
+
+config BOTIEYES_OLED_PROTOCOL_SPI
+    bool "Hardware SPI"
+    help
+        Use hardware SPI interface for faster updates.
+
+endchoice
+
+config BOTIEYES_OLED_SDA_PIN
+    int "OLED I2C SDA pin"
+    range 0 48
+    default 4
+    depends on BOTIEYES_OLED_PROTOCOL_I2C
+
+config BOTIEYES_OLED_SCL_PIN
+    int "OLED I2C SCL pin"
+    range 0 48
+    default 15
+    depends on BOTIEYES_OLED_PROTOCOL_I2C
+
+config BOTIEYES_OLED_I2C_ADDRESS
+    hex "OLED I2C address"
+    range 0x00 0x7F
+    default 0x3C
+    depends on BOTIEYES_OLED_PROTOCOL_I2C
+
+config BOTIEYES_OLED_MOSI_PIN
+    int "OLED SPI MOSI pin"
+    range 0 48
+    default 23
+    depends on BOTIEYES_OLED_PROTOCOL_SPI
+    help
+        SPI Master Out Slave In (data line).
+
+config BOTIEYES_OLED_SCK_PIN
+    int "OLED SPI SCK pin"
+    range 0 48
+    default 18
+    depends on BOTIEYES_OLED_PROTOCOL_SPI
+    help
+        SPI clock line.
+
+config BOTIEYES_OLED_CS_PIN
+    int "OLED SPI CS pin"
+    range -1 48
+    default 5
+    depends on BOTIEYES_OLED_PROTOCOL_SPI
+    help
+        SPI chip select pin. Set to -1 if not used.
+
+config BOTIEYES_OLED_DC_PIN
+    int "OLED SPI DC pin"
+    range 0 48
+    default 17
+    depends on BOTIEYES_OLED_PROTOCOL_SPI
+    help
+        Data/Command selection pin (required for SPI).
+
+config BOTIEYES_OLED_RST_PIN
+    int "OLED reset pin"
+    range -1 48
+    default 16
+    help
+        Reset pin for OLED. Set to -1 if not used.
+
+endmenu

@@ -1,7 +1,7 @@
 #ifndef EMOTION_STATE_H
 #define EMOTION_STATE_H
 
-#include <Arduino.h>
+#include <stdint.h>
 
 namespace BotiEyes {
 
@@ -24,7 +24,7 @@ struct EmotionState {
     float targetArousal;     // Target energy
     
     // Interpolation state
-    uint32_t startTime;      // Interpolation start timestamp (millis())
+    uint32_t startTime;      // Interpolation start timestamp (ms tick)
     uint16_t duration;       // Transition duration in milliseconds
     
     /**

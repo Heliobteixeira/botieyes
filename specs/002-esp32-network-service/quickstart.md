@@ -9,26 +9,45 @@ full protocol and [plan.md](plan.md) for the design.
 ## Prerequisites
 
 - TTGO LoRa32 (ESP32 + integrated SSD1306 128x64). OLED pins: SDA=GPIO4, SCL=GPIO15, RST=GPIO16.
-- Arduino IDE 1.8+ (or PlatformIO) with the ESP32 board package and Adafruit GFX/SSD1306 libraries.
+- ESP-IDF v6.0.1 active shell (`source ~/.espressif/tools/activate_idf_v6.0.1.sh`).
 - The existing `BotiEyes` library installed/available.
 - A controller machine (macOS/Linux/Windows) on the **same Wi-Fi network**, with Python 3.8+.
 
 ## 1. Configure Wi-Fi and flash the device
 
-1. Open `BotiEyes/examples/NetworkControl/NetworkControl.ino`.
-2. Set your network credentials at the top of the sketch:
+1. Activate ESP-IDF and enter the project root:
 
-   ```cpp
-   const char* WIFI_SSID = "your-ssid";
-   const char* WIFI_PASS = "your-password";
-   ```
+  ```bash
+  source ~/.espressif/tools/activate_idf_v6.0.1.sh
+  cd esp-idf
+  ```
 
-3. Select the TTGO LoRa32 board and the correct serial port, then upload.
+2. Set the ESP target and configure Wi-Fi credentials:
+
+  ```bash
+  idf.py set-target esp32
+  idf.py menuconfig
+  ```
+
+  In `menuconfig`, set SSID/password under `BotiEyes Network Control`.
+
+3. Build, flash, and monitor:
+
+  ```bash
+  idf.py build flash monitor
+  ```
+
 4. On boot, the OLED shows the device **IP address** (e.g. `192.168.1.42`) once Wi-Fi connects, then the
    eyes start in autonomous idle behavior. Note the IP — you will point the controller at it.
 
 > Per the repo commit policy, after changing anything under `BotiEyes/src/**` or `examples/**` that affects
 > rendering/timing/I2C/display/API, build + upload to the board and visually verify before committing.
+
+### Arduino fallback (temporary)
+
+If you need the legacy Arduino path during migration, use
+`BotiEyes/examples/NetworkControl/NetworkControl.ino`. ESP-IDF remains the
+primary supported ESP32 path.
 
 ## 2. Drive the eyes from the controller
 

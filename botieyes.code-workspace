@@ -1,0 +1,38 @@
+{
+	"folders": [
+		{
+			"name": "botieyes (root)",
+			"path": "."
+		},
+		{
+			"name": "ESP-IDF App",
+			"path": "esp-idf"
+		}
+	],
+	"settings": {
+		"idf.espIdfPath": "${workspaceFolder:botieyes (root)}/../.espressif/esp-idf",
+		"idf.projectPath": "${workspaceFolder:ESP-IDF App}",
+		"idf.toolsPath": "${workspaceFolder:botieyes (root)}/../.espressif/tools",
+		"search.exclude": {
+			"**/node_modules": true,
+			"**/.git": true,
+			"**/build": true,
+			"**/.idf_build": true
+		},
+		"files.exclude": {
+			"**/__pycache__": true,
+			"**/*.pyc": true
+		},
+		"[cpp]": {
+			"editor.defaultFormatter": "ms-vscode.cpptools",
+			"editor.formatOnSave": true
+		}
+	},
+	"extensions": {
+		"recommendations": [
+			"espressif.esp-idf-extension",
+			"ms-vscode.cpptools",
+			"ms-python.python"
+		]
+	}
+}

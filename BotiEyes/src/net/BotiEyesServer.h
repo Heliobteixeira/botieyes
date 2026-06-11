@@ -8,11 +8,17 @@
 // existing examples are completely unaffected (FR-020). The pure codec/session
 // logic in CommandCodec.* / SessionManager.* remains host-testable on its own.
 
-#ifdef ESP32
+#if defined(ESP32) || defined(ESP_PLATFORM)
 
 #include <stdint.h>
 #include <stddef.h>
+
+#if defined(ESP_PLATFORM)
+#include <sys/socket.h>
+#include <netinet/in.h>
+#elif defined(ESP32)
 #include <WiFiUdp.h>
+#endif
 
 #include "../BotiEyes.h"
 #include "NetProtocol.h"
@@ -25,7 +31,7 @@ namespace net {
 /**
  * Non-blocking UDP control server for a BotiEyes instance.
  *
- * Usage (in an Arduino sketch):
+ * Usage (in an embedded app):
  *   BotiEyes::net::BotiEyesServer server(eyes);
  *   ...
  *   server.begin();          // after WiFi is connected
@@ -62,7 +68,11 @@ private:
     void sendStatus(uint32_t ip, uint16_t port);
 
     BotiEyes&      eyes_;
+#if defined(ESP_PLATFORM)
+    int            udpSock_;
+#elif defined(ESP32)
     WiFiUDP        udp_;
+#endif
     SessionManager session_;
     uint16_t       port_;
     bool           started_;
@@ -73,5 +83,5 @@ private:
 } // namespace net
 } // namespace BotiEyes
 
-#endif // ESP32
+#endif // ESP32 || ESP_PLATFORM
 #endif // BOTIEYES_NET_SERVER_H

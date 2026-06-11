@@ -110,29 +110,31 @@ eyes.enableIdleBehavior(true);  // Enable micro-blinks every 3-5 seconds
 - **BasicEmotion.ino**: Cycle through all 12 emotion presets
 - **EyePosition.ino**: Demonstrate eye gaze control and behaviors
 - **SerialControl.ino**: Control via serial commands (AI integration ready)
-- **NetworkControl.ino** (ESP32): Remote control over Wi-Fi/UDP from another machine on the same LAN
+- **esp-idf/** (ESP32): Primary network-control application (Wi-Fi/UDP) for remote control from another machine on the same LAN
+- **NetworkControl.ino** (ESP32, fallback): Legacy Arduino sketch kept for transition compatibility
 
 ## Network Control (ESP32)
 
-On ESP32 boards (e.g. TTGO LoRa32), an optional UDP control service lets a
+On ESP32 boards (e.g. TTGO LoRa32), the primary path is the ESP-IDF app under
+`esp-idf/`. It runs the same UDP control service and lets a
 controller on the **same local network** drive emotions, gaze, presets,
 blink/wink, and idle in real time with low latency and automatic recovery.
 
-```cpp
-#include <net/BotiEyesServer.h>
+Build/flash with ESP-IDF:
 
-BotiEyes::BotiEyes eyes;
-BotiEyes::net::BotiEyesServer server(eyes);
-
-// after WiFi.begin() connects:
-server.begin();            // UDP port 4210
-
-void loop() {
-  server.poll();           // non-blocking: drain inbound datagrams
-  server.applyPending();   // apply newest-wins targets + queued actions
-  eyes.update();           // render a frame
-}
+```bash
+source ~/.espressif/tools/activate_idf_v6.0.1.sh
+cd esp-idf
+idf.py set-target esp32
+idf.py menuconfig
+idf.py build flash monitor
 ```
+
+Set SSID/password in `menuconfig` under `BotiEyes Network Control`.
+
+The existing `BotiEyes/examples/NetworkControl/NetworkControl.ino` is retained
+as a fallback path during migration and will be deprecated once ESP-IDF parity
+is fully hardware-validated.
 
 The device shows its IP on the OLED after joining Wi-Fi. Drive it with the
 reference Python controller (standard library only):

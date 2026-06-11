@@ -14,15 +14,26 @@ This checklist is the shortest practical on-device pass to close the remaining h
 
 ## Setup
 
-1. Edit [BotiEyes/examples/NetworkControl/NetworkControl.ino](BotiEyes/examples/NetworkControl/NetworkControl.ino) and set:
+1. Activate ESP-IDF and enter project root:
 
-```cpp
-const char* WIFI_SSID = "your-ssid";
-const char* WIFI_PASS = "your-password";
+```bash
+source ~/.espressif/tools/activate_idf_v6.0.1.sh
+cd esp-idf
 ```
 
-2. Flash the sketch to the TTGO LoRa32.
-3. Open the serial monitor at `115200`.
+2. Configure credentials in menuconfig (`BotiEyes Network Control`):
+
+```bash
+idf.py set-target esp32
+idf.py menuconfig
+```
+
+3. Flash and monitor:
+
+```bash
+idf.py build flash monitor
+```
+
 4. Wait for the OLED to show the device IP and UDP port `4210`.
 5. On the controller machine, from repo root:
 
@@ -197,7 +208,7 @@ Tasks covered:
 ### I. Quickstart end-to-end pass
 
 Confirm the full documented flow works without deviation:
-- Flash sketch
+- Flash ESP-IDF app (`esp-idf/`)
 - Read IP from OLED
 - Connect with `python3 cli.py --host <device-ip>`
 - Run `emotion`, `preset`, `gaze`, `blink`, `wink`, `idle`, `status`

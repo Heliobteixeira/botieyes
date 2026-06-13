@@ -1,4 +1,4 @@
-# Feature Specification: SSD1306 SPI Component Integration
+# Feature Specification: SSD1306 Display Driver Migration to nopnop2002 Component
 
 **Feature Branch**: `003-ssd1306-spi-component`
 
@@ -6,7 +6,9 @@
 
 **Status**: Draft
 
-**Input**: User description: "Implement SPI support for the SSD1306 display in the BotiEyes library using the **nopnop2002/esp-idf-ssd1306** component for hardware communication, while keeping the existing **Adafruit_GFX**-based graphic rendering layer unchanged. The component is integrated via `idf_component.yml` and configured at build time through Kconfig/menuconfig, covering interface selection (SPI), pin assignment for MOSI, SCK, CS, DC, and RST (with sensible defaults), and uses `SPI2_HOST` with DMA at up to 10 MHz. Any initialization failure must log an error, halt, and set the status LED to red. Runtime protocol switching and other display controllers are out of scope."
+**Summary**: Migrate SSD1306 hardware communication from custom I2C driver to nopnop2002/esp-idf-ssd1306 component, supporting both I2C and SPI protocols with build-time configuration.
+
+**Input**: User description: "Migrate SSD1306 display hardware communication to the **nopnop2002/esp-idf-ssd1306** component for both I2C and SPI protocols, replacing the existing custom I2C driver, while keeping the existing **Adafruit_GFX**-based graphic rendering layer unchanged. The component is integrated via `idf_component.yml` and configured at build time through Kconfig/menuconfig, covering interface selection (I2C or SPI), pin assignment for MOSI, SCK, CS, DC, and RST (with sensible defaults for SPI: GPIO11, GPIO12, GPIO10, GPIO9, GPIO8), and uses `SPI2_HOST` with DMA at up to 10 MHz for SPI mode. Any initialization failure must log an error, halt, and set the status LED to red. Runtime protocol switching and other display controllers are out of scope."
 
 ## Clarifications
 
@@ -81,7 +83,7 @@ As a developer debugging hardware issues, I want clear visual and logging feedba
 
 ### Functional Requirements
 
-- **FR-001**: System MUST integrate nopnop2002/esp-idf-ssd1306 component via `idf_component.yml` for SPI hardware communication
+- **FR-001**: System MUST integrate nopnop2002/esp-idf-ssd1306 component via `idf_component.yml` for both I2C and SPI hardware communication, replacing the existing custom I2C driver (esp_ssd1306.cpp/h)
 - **FR-002**: System MUST preserve existing Adafruit_GFX-based rendering layer without modification to graphics code
 - **FR-003**: System MUST provide Kconfig/menuconfig options for SPI interface selection
 - **FR-004**: System MUST provide Kconfig/menuconfig fields for MOSI, SCK, CS, DC, and RST pin assignment with defaults (GPIO11, GPIO12, GPIO10, GPIO9, GPIO8)
@@ -124,6 +126,6 @@ As a developer debugging hardware issues, I want clear visual and logging feedba
 - SPI2_HOST is available and not already in use by other peripherals in the developer's hardware design
 - Display is a standard SSD1306 128x64 OLED compatible with the nopnop2002/esp-idf-ssd1306 component
 - Developer is using ESP-IDF v5.0 or later with idf_component.yml support
-- I2C protocol support will remain available as an alternative configuration option (not removed)
+- I2C protocol support will remain available as an alternative configuration option, but will use the nopnop2002/esp-idf-ssd1306 component instead of the custom driver
 - Adafruit_GFX library is already integrated and functional in the project
-- Default pin assignments (MOSI=11, SCK=12, CS=10, DC=9, RST=8) are based on the user's ESP32-S3 hardware layout documented in `esp-idf/ssd1306_esp32s3.md`
+- Default SPI pin assignments (MOSI=11, SCK=12, CS=10, DC=9, RST=8) are based on the user's ESP32-S3 hardware layout documented in `esp-idf/ssd1306_esp32s3.md`

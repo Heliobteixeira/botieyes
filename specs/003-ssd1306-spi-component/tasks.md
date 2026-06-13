@@ -1,8 +1,10 @@
-# Tasks: SSD1306 SPI Component Integration
+# Tasks: SSD1306 Display Driver Migration to nopnop2002 Component
 
 **Feature**: [spec.md](spec.md) | **Plan**: [plan.md](plan.md)
 **Input**: Design documents from `/specs/003-ssd1306-spi-component/`
 **Date**: 2026-06-13
+
+**Scope**: Migrate both I2C and SPI hardware communication from custom driver (esp_ssd1306.cpp/h) to nopnop2002/esp-idf-ssd1306 component, update SPI pin defaults to match spec (GPIO11, 12, 10, 9, 8), and validate both protocols work correctly.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -34,6 +36,7 @@
 
 - [ ] T008 Add nopnop2002/esp-idf-ssd1306 component dependency in esp-idf/main/idf_component.yml
 - [ ] T009 [P] Create hardware wiring reference document in esp-idf/ssd1306_esp32s3.md
+- [ ] T010 [P] Remove custom I2C driver files (esp-idf/main/esp_ssd1306.cpp and esp-idf/main/esp_ssd1306.h) since nopnop2002 component provides both I2C and SPI support
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -47,38 +50,37 @@
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] Extend esp-idf/main/Kconfig.projbuild to add SPI protocol option to existing I2C/SPI choice menu
-- [ ] T011 [US1] Add CONFIG_BOTIEYES_OLED_MOSI_PIN configuration (int, range 0-48, default 11, depends on SPI) in esp-idf/main/Kconfig.projbuild
-- [ ] T012 [US1] Add CONFIG_BOTIEYES_OLED_SCK_PIN configuration (int, range 0-48, default 12, depends on SPI) in esp-idf/main/Kconfig.projbuild
-- [ ] T013 [US1] Add CONFIG_BOTIEYES_OLED_CS_PIN configuration (int, range -1 to 48, default 10, depends on SPI) in esp-idf/main/Kconfig.projbuild
-- [ ] T014 [US1] Add CONFIG_BOTIEYES_OLED_DC_PIN configuration (int, range 0-48, default 9, depends on SPI) in esp-idf/main/Kconfig.projbuild
-- [ ] T015 [US1] Add CONFIG_BOTIEYES_OLED_RST_PIN configuration (int, range -1 to 48, default 8, depends on SPI) in esp-idf/main/Kconfig.projbuild
-- [ ] T016 [US1] Add CONFIG_BOTIEYES_SPI_CLOCK_SPEED_HZ configuration (int, range 100000-10000000, default 10000000, depends on SPI) in esp-idf/main/Kconfig.projbuild
-- [ ] T017 [US1] Verify menuconfig displays SPI options only when SPI protocol is selected via `idf.py menuconfig`
-- [ ] T018 [US1] Verify project builds successfully with default SPI pin configuration via `idf.py build`
+- [ ] T011 [US1] Update esp-idf/main/Kconfig.projbuild SPI pin defaults to match spec: MOSI=11, SCK=12, CS=10, DC=9, RST=8 (currently using old defaults)
+- [ ] T011 [US1] Update esp-idf/main/Kconfig.projbuild SPI pin defaults to match spec: MOSI=11, SCK=12, CS=10, DC=9, RST=8 (currently using old defaults)
+- [ ] T012 [US1] Add CONFIG_BOTIEYES_SPI_CLOCK_SPEED_HZ configuration if not present (int, range 100000-10000000, default 10000000, depends on SPI) in esp-idf/main/Kconfig.projbuild
+- [ ] T013 [US1] Verify menuconfig displays SPI options only when SPI protocol is selected via `idf.py menuconfig`
+- [ ] T014 [US1] Verify project builds successfully with updated SPI pin configuration via `idf.py build`
 
-**Checkpoint**: At this point, User Story 1 is fully functional - developers can configure SPI pins via menuconfig
+**Checkpoint**: At this point, User Story 1 is fully functional - developers can configure SPI pins via menuconfig with correct defaults
 
 ---
 
 ## Phase 4: User Story 2 - SPI Display Initialization and Rendering (Priority: P2)
 
-**Goal**: Initialize SSD1306 display via SPI and render graphics using existing Adafruit_GFX rendering layer
+**Goal**: Initialize SSD1306 display via both I2C and SPI using nopnop2002 component, render graphics using existing Adafruit_GFX rendering layer
 
 **Independent Test**: Flash firmware to ESP32-S3 with correctly wired SSD1306 SPI display, observe display initialize, verify text/graphics appear on screen using BasicEmotion example, confirm smooth animation at 25 FPS
 
 ### Implementation for User Story 2
 
-- [ ] T019 [P] [US2] Create display initialization header file esp-idf/main/display_init.h with init_display() function declaration
-- [ ] T020 [US2] Implement SPI initialization function in esp-idf/main/display_init.cpp using nopnop2002/ssd1306 component API (spi_master_init + ssd1306_init)
-- [ ] T021 [US2] Add conditional compilation for I2C vs SPI initialization paths in esp-idf/main/display_init.cpp using CONFIG_BOTIEYES_OLED_PROTOCOL_SPI
-- [ ] T022 [US2] Implement buffer integration layer in esp-idf/main/display_init.cpp to connect Adafruit_GFX framebuffer with ssd1306_set_buffer/show_buffer APIs
-- [ ] T023 [US2] Update esp-idf/main/main.cpp to call init_display() during app_main() before rendering operations
-- [ ] T024 [US2] Verify BasicEmotion example renders correctly on SPI display by flashing to ESP32-S3 hardware
-- [ ] T025 [US2] Measure and log display update timing to confirm <1ms per frame (10 MHz SPI with DMA) using esp_timer_get_time()
-- [ ] T026 [US2] Verify 25 FPS sustained frame rate with eye animations using performance counters
+- [ ] T015 [P] [US2] Update display initialization header file esp-idf/main/display_init.h to remove ESP_SSD1306 class references, use nopnop2002 component's SSD1306_t type
+- [ ] T016 [US2] Replace I2C initialization in esp-idf/main/display_init.cpp with nopnop2002 component API (i2c_master_init + ssd1306_init)
+- [ ] T017 [US2] Implement SPI initialization in esp-idf/main/display_init.cpp using nopnop2002/ssd1306 component API (spi_master_init + ssd1306_init)
+- [ ] T018 [US2] Update conditional compilation in esp-idf/main/display_init.cpp to dispatch between I2C and SPI using CONFIG_BOTIEYES_OLED_PROTOCOL_*
+- [ ] T019 [US2] Update buffer integration layer in esp-idf/main/display_init.cpp to use ssd1306_set_buffer/show_buffer APIs (replace ESP_SSD1306::display())
+- [ ] T020 [US2] Update esp-idf/main/main.cpp to work with SSD1306_t* instead of ESP_SSD1306* type
+- [ ] T021 [US2] Remove ESP_SSD1306 dependencies from esp-idf/main/CMakeLists.txt since custom driver removed
+- [ ] T022 [US2] Verify BasicEmotion example renders correctly on SPI display by flashing to ESP32-S3 hardware
+- [ ] T023 [US2] Measure and log display update timing to confirm <1ms per frame (10 MHz SPI with DMA) using esp_timer_get_time()
+- [ ] T024 [US2] Verify 25 FPS sustained frame rate with eye animations using performance counters
+- [ ] T025 [US2] Verify I2C mode still works correctly after migration to nopnop2002 component
 
-**Checkpoint**: At this point, User Stories 1 AND 2 both work - developers can configure and use SPI displays with existing BotiEyes rendering code unchanged
+**Checkpoint**: At this point, User Stories 1 AND 2 both work - developers can configure and use both I2C and SPI displays with nopnop2002 component
 
 ---
 
@@ -90,17 +92,17 @@
 
 ### Implementation for User Story 3
 
-- [ ] T027 [P] [US3] Add timeout tracking to SPI initialization in esp-idf/main/display_init.cpp using esp_timer_get_time() with 2-second timeout per FR-014
-- [ ] T028 [P] [US3] Implement status LED initialization in esp-idf/main/main.cpp for GPIO38 using led_strip component (blue=initializing, green=success, red=error)
-- [ ] T029 [US3] Add error logging for initialization failures in esp-idf/main/display_init.cpp with esp_log_level_set() and ESP_LOGE() macros
-- [ ] T030 [US3] Implement halt behavior in esp-idf/main/main.cpp by returning from app_main() on initialization failure (system enters idle state)
-- [ ] T031 [US3] Add DMA allocation failure detection in esp-idf/main/display_init.cpp and trigger error path (log, halt, LED red) per FR-015
-- [ ] T032 [US3] Handle LED initialization failure gracefully in esp-idf/main/main.cpp (log warning, continue) per FR-016 if GPIO38 conflicts with other hardware
-- [ ] T033 [US3] Add invalid pin detection in esp-idf/main/display_init.cpp to log warning for out-of-range GPIO numbers per clarification (accept, warn, attempt init)
-- [ ] T034 [US3] Test timeout scenario by adding artificial delay in init code, verify 2-second timeout triggers error handling
-- [ ] T035 [US3] Test DMA failure scenario by commenting out DMA initialization, verify error handling activates
-- [ ] T036 [US3] Test invalid pin scenario by setting MOSI=99 in menuconfig, verify warning logged and initialization fails gracefully
-- [ ] T037 [US3] Test LED conflict scenario by initializing GPIO38 for another purpose before LED init, verify warning logged but display init continues
+- [ ] T026 [P] [US3] Add timeout tracking to SPI initialization in esp-idf/main/display_init.cpp using esp_timer_get_time() with 2-second timeout per FR-014
+- [ ] T027 [P] [US3] Implement status LED initialization in esp-idf/main/main.cpp for GPIO38 using led_strip component (blue=initializing, green=success, red=error)
+- [ ] T028 [US3] Add error logging for initialization failures in esp-idf/main/display_init.cpp with esp_log_level_set() and ESP_LOGE() macros
+- [ ] T029 [US3] Implement halt behavior in esp-idf/main/main.cpp by returning from app_main() on initialization failure (system enters idle state)
+- [ ] T030 [US3] Add DMA allocation failure detection in esp-idf/main/display_init.cpp and trigger error path (log, halt, LED red) per FR-015
+- [ ] T031 [US3] Handle LED initialization failure gracefully in esp-idf/main/main.cpp (log warning, continue) per FR-016 if GPIO38 conflicts with other hardware
+- [ ] T032 [US3] Add invalid pin detection in esp-idf/main/display_init.cpp to log warning for out-of-range GPIO numbers per clarification (accept, warn, attempt init)
+- [ ] T033 [US3] Test timeout scenario by adding artificial delay in init code, verify 2-second timeout triggers error handling
+- [ ] T034 [US3] Test DMA failure scenario by commenting out DMA initialization, verify error handling activates
+- [ ] T035 [US3] Test invalid pin scenario by setting MOSI=99 in menuconfig, verify warning logged and initialization fails gracefully
+- [ ] T036 [US3] Test LED conflict scenario by initializing GPIO38 for another purpose before LED init, verify warning logged but display init continues
 
 **Checkpoint**: All user stories now independently functional - configuration, rendering, and error handling all work correctly
 
@@ -110,13 +112,13 @@
 
 **Purpose**: Final validation, performance tuning, documentation updates
 
-- [ ] T038 [P] Verify all BotiEyes examples (BasicEmotion, BrightnessChange, EyePosition, IdleBehavior) work with SPI configuration
-- [ ] T039 [P] Update .github/copilot-instructions.md to add SPI-specific commit policy guidelines
-- [ ] T040 [P] Run performance benchmark to confirm <1ms display update and 25 FPS sustained (log results to quickstart.md)
-- [ ] T041 [P] Verify emulator (emulator/botieyes_emulator.py) continues to work unchanged (no SPI dependency)
-- [ ] T042 Validate success criteria SC-001 through SC-006 from spec.md are all met
-- [ ] T043 Create PR description summarizing changes and linking to spec/plan/quickstart docs
-- [ ] T044 Final code review checklist: verify no Adafruit_GFX code modified, all SPI code conditionally compiled, constitution principles upheld
+- [ ] T037 [P] Verify all BotiEyes examples (BasicEmotion, BrightnessChange, EyePosition, IdleBehavior) work with SPI configuration
+- [ ] T038 [P] Update .github/copilot-instructions.md to add SPI-specific commit policy guidelines
+- [ ] T039 [P] Run performance benchmark to confirm <1ms display update and 25 FPS sustained (log results to quickstart.md)
+- [ ] T040 [P] Verify emulator (emulator/botieyes_emulator.py) continues to work unchanged (no SPI dependency)
+- [ ] T041 Validate success criteria SC-001 through SC-006 from spec.md are all met
+- [ ] T042 Create PR description summarizing changes and linking to spec/plan/quickstart docs
+- [ ] T043 Final code review checklist: verify no Adafruit_GFX code modified, all SPI code conditionally compiled, constitution principles upheld
 
 ---
 
@@ -130,14 +132,16 @@ This section provides detailed implementation guidance for each task to ensure a
 
 **File**: `esp-idf/main/idf_component.yml`
 
-**Context**: See [research.md](research.md) Decision 1 for component integration pattern.
+**Context**: See [research.md](research.md) Decision 1 for component integration pattern. This component replaces the custom I2C driver (esp_ssd1306.cpp/h) and provides both I2C and SPI support.
 
 **Steps**:
-1. Create or edit `esp-idf/main/idf_component.yml`
-2. Add the following YAML structure:
+1. Edit `esp-idf/main/idf_component.yml`
+2. Add or verify the following YAML structure:
 
 ```yaml
 dependencies:
+  espressif/led_strip: '*'
+  fasani/adafruit_gfx: '*'
   nopnop2002/esp-idf-ssd1306:
     git: https://github.com/nopnop2002/esp-idf-ssd1306.git
     version: "*"
@@ -146,7 +150,7 @@ dependencies:
 **Acceptance Criteria**:
 - File exists at `esp-idf/main/idf_component.yml`
 - Valid YAML syntax
-- Component will be auto-fetched to `managed_components/` on next build
+- Component will be auto-fetched to `managed_components/nopnop2002__esp-idf-ssd1306/` on next build
 - Run `idf.py reconfigure` to verify component is downloaded
 
 ---
@@ -208,9 +212,9 @@ dependencies:
 
 **File**: `esp-idf/main/Kconfig.projbuild`
 
-**Context**: See [contracts/Kconfig-API.md](contracts/Kconfig-API.md) Section 1 for the protocol selection contract.
+**Context**: Update SPI pin defaults to match the specification (GPIO11, 12, 10, 9, 8) instead of the current values (GPIO23, 18, 5, 17, 16).
 
-**Current State**: File may already have I2C configuration. Need to convert to choice menu.
+**Current State**: Kconfig.projbuild already has I2C/SPI choice menu and pin configurations, but defaults are incorrect.
 
 **Implementation**:
 1. Open `esp-idf/main/Kconfig.projbuild`
@@ -257,7 +261,46 @@ endmenu
 
 ---
 
-#### T011-T016: Add SPI Pin Configuration Options
+#### T011: Update SPI Pin Defaults
+
+**File**: `esp-idf/main/Kconfig.projbuild`
+
+**Context**: See [contracts/Kconfig-API.md](contracts/Kconfig-API.md) Sections 2-7 for each pin specification.
+
+**Current Values** (incorrect):
+```kconfig
+config BOTIEYES_OLED_MOSI_PIN
+    default 23  # Should be 11
+
+config BOTIEYES_OLED_SCK_PIN
+    default 18  # Should be 12
+
+config BOTIEYES_OLED_CS_PIN
+    default 5   # Should be 10
+
+config BOTIEYES_OLED_DC_PIN
+    default 17  # Should be 9
+
+config BOTIEYES_OLED_RST_PIN
+    default 16  # Should be 8
+```
+
+**Required Changes**:
+Update each default value to match the spec:
+- MOSI: 23 → 11
+- SCK: 18 → 12
+- CS: 5 → 10
+- DC: 17 → 9
+- RST: 16 → 8
+
+**Acceptance Criteria**:
+- All 5 pin defaults updated in Kconfig.projbuild
+- Running menuconfig shows new defaults
+- Help text remains descriptive
+
+---
+
+#### T012: Add or Verify SPI Clock Speed Configuration
 
 **Files**: `esp-idf/main/Kconfig.projbuild` (all tasks modify same file)
 
@@ -276,9 +319,7 @@ config BOTIEYES_OLED_<PIN_NAME>_PIN
         Default: GPIO<DEFAULT_VALUE> (<hardware reference>)
 ```
 
-**Specific Implementations**:
-
-**T011 - MOSI Pin**:
+**Implementation** (if CONFIG_BOTIEYES_SPI_CLOCK_SPEED_HZ doesn't exist):
 ```kconfig
 config BOTIEYES_OLED_MOSI_PIN
     int "OLED SPI MOSI pin"
@@ -1184,25 +1225,30 @@ For complete SPI support with rendering and error handling:
 
 ## Summary
 
-- **Total Tasks**: 44 (7 completed in planning phase, 37 implementation tasks)
-- **Setup/Foundational**: 9 tasks (T001-T009)
-- **User Story 1** (P1 - Configuration): 9 tasks (T010-T018)
-- **User Story 2** (P2 - Rendering): 8 tasks (T019-T026)
-- **User Story 3** (P3 - Error Handling): 11 tasks (T027-T037)
-- **Polish**: 7 tasks (T038-T044)
-- **Parallelizable Tasks**: 15 tasks marked [P]
-- **MVP Tasks**: 18 tasks (T001-T018, User Story 1 only)
+- **Total Tasks**: 43 (7 completed in planning phase, 36 implementation tasks)
+- **Setup/Foundational**: 10 tasks (T001-T010)
+- **User Story 1** (P1 - Configuration): 4 tasks (T011-T014)
+- **User Story 2** (P2 - Rendering): 11 tasks (T015-T025)
+- **User Story 3** (P3 - Error Handling): 11 tasks (T026-T036)
+- **Polish**: 7 tasks (T037-T043)
+- **Parallelizable Tasks**: ~12 tasks marked [P]
+- **MVP Tasks**: 17 tasks (T001-T014, User Story 1 complete with correct defaults)
 - **Sequential Dependencies**: User Stories must complete in order (US1 → US2 → US3)
 - **Independent Test Criteria**: Each user story has clear validation without dependencies
 
 **Key Files Modified**:
-- `esp-idf/main/Kconfig.projbuild` (7 new config options)
+- `esp-idf/main/Kconfig.projbuild` (update SPI pin defaults to match spec: GPIO11, 12, 10, 9, 8)
 - `esp-idf/main/idf_component.yml` (add nopnop2002/ssd1306 dependency)
-- `esp-idf/main/display_init.h` (new interface)
-- `esp-idf/main/display_init.cpp` (SPI initialization logic)
-- `esp-idf/main/main.cpp` (call display init, handle errors)
+- `esp-idf/main/display_init.h` (update to use SSD1306_t from component)
+- `esp-idf/main/display_init.cpp` (migrate both I2C and SPI to nopnop2002 component)
+- `esp-idf/main/main.cpp` (update to work with SSD1306_t* type)
+- `esp-idf/main/CMakeLists.txt` (remove esp_ssd1306.cpp from build)
 - `esp-idf/ssd1306_esp32s3.md` (hardware wiring reference)
 - `.github/copilot-instructions.md` (commit policy update)
+
+**Files Removed** (replaced by nopnop2002 component):
+- `esp-idf/main/esp_ssd1306.cpp` (custom I2C driver)
+- `esp-idf/main/esp_ssd1306.h` (custom I2C driver header)
 
 **Files Unchanged** (per FR-002):
 - `BotiEyes/src/*.cpp` (all Adafruit_GFX rendering code)

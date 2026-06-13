@@ -1,4 +1,4 @@
-# Implementation Plan: SSD1306 SPI Component Integration
+# Implementation Plan: SSD1306 Display Driver Migration to nopnop2002 Component
 
 **Branch**: `003-ssd1306-spi-component` | **Date**: 2026-06-13 | **Spec**: [spec.md](spec.md)
 
@@ -8,16 +8,17 @@
 
 ## Summary
 
-Add SPI protocol support to the BotiEyes library for ESP32-S3, enabling developers to connect SSD1306 OLED displays via SPI interface. Integration uses the nopnop2002/esp-idf-ssd1306 component for hardware communication while preserving the existing Adafruit_GFX rendering layer. Configuration is build-time via Kconfig/menuconfig with sensible pin defaults (MOSI=GPIO11, SCK=GPIO12, CS=GPIO10, DC=GPIO9, RST=GPIO8). SPI communication uses SPI2_HOST with DMA at up to 10 MHz for 25 FPS display refresh.
+Migrate SSD1306 hardware communication to the nopnop2002/esp-idf-ssd1306 component for both I2C and SPI protocols, replacing the existing custom I2C driver (esp_ssd1306.cpp/h) while preserving the existing Adafruit_GFX rendering layer. Configuration is build-time via Kconfig/menuconfig with sensible pin defaults for SPI (MOSI=GPIO11, SCK=GPIO12, CS=GPIO10, DC=GPIO9, RST=GPIO8). SPI communication uses SPI2_HOST with DMA at up to 10 MHz for 25 FPS display refresh. I2C mode continues to be supported through the same component.
 
 ## Technical Context
 
 **Language/Version**: C++ (Arduino 1.8+/PlatformIO) for BotiEyes library; ESP-IDF 6.0.1 for ESP32-S3 firmware
 
 **Primary Dependencies**: 
-- nopnop2002/esp-idf-ssd1306 component (SPI hardware communication)
+- nopnop2002/esp-idf-ssd1306 component (unified I2C and SPI hardware communication, replaces custom driver)
 - Adafruit_GFX (graphics rendering - preserved unchanged)
 - ESP-IDF SPI Master driver (SPI2_HOST with DMA)
+- ESP-IDF I2C Master driver (for I2C mode)
 
 **Storage**: N/A (configuration stored in sdkconfig from menuconfig)
 

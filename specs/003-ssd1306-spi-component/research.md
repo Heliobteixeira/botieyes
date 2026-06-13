@@ -6,21 +6,23 @@
 
 ## Overview
 
-This document consolidates technical research for integrating SPI support into BotiEyes using the nopnop2002/esp-idf-ssd1306 component. All [NEEDS CLARIFICATION] markers from the Technical Context have been resolved through targeted research.
+This document consolidates technical research for migrating SSD1306 hardware communication to the nopnop2002/esp-idf-ssd1306 component for both I2C and SPI protocols, replacing the existing custom I2C driver. All [NEEDS CLARIFICATION] markers from the Technical Context have been resolved through targeted research.
 
 ---
 
-## Decision 1: Component Integration via idf_component.yml
+## Decision 1: Unified Component Integration for Both Protocols
 
-**Context**: How to integrate the nopnop2002/esp-idf-ssd1306 component into the ESP-IDF build system while keeping the existing Adafruit_GFX rendering layer unchanged.
+**Context**: How to integrate the nopnop2002/esp-idf-ssd1306 component into the ESP-IDF build system to replace the existing custom I2C driver (esp_ssd1306.cpp/h) while supporting both I2C and SPI protocols and keeping the existing Adafruit_GFX rendering layer unchanged.
 
-**Decision**: Use direct component integration via `idf_component.yml` with internal buffer access pattern.
+**Decision**: Use direct component integration via `idf_component.yml` with internal buffer access pattern for both I2C and SPI protocols, removing the custom driver entirely.
 
 **Rationale**:
-- nopnop2002/esp-idf-ssd1306 provides complete SPI abstraction with DMA support
+- nopnop2002/esp-idf-ssd1306 provides complete I2C and SPI abstraction with DMA support (for SPI)
 - Internal framebuffer is compatible with Adafruit_GFX byte-oriented rendering
-- Component manages all SPI transactions internally (init, commands, data transfer)
+- Component manages all I2C and SPI transactions internally (init, commands, data transfer)
 - Buffer API is protocol-agnostic (same for I2C and SPI)
+- Eliminates maintenance burden of custom driver
+- Proven, well-tested component from the community
 
 **Implementation**:
 

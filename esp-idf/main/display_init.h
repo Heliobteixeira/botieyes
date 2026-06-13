@@ -3,24 +3,27 @@
 
 #include <Adafruit_GFX.h>
 #include "DisplayConfig.h"
+#include "BotiEyes.h"
 
 namespace BotiEyes
 {
     namespace display
     {
 
-        // Forward declaration of ESP-IDF SSD1306 adapter
-        class ESP_SSD1306;
-
         /**
-         * Initialize OLED display based on Kconfig settings
-         * Returns initialized display object or nullptr on failure
+         * Initialize OLED display based on Kconfig settings.
+         * Returns an Adafruit_GFX-compatible object backed by the nopnop2002 SSD1306 component.
          */
-        ESP_SSD1306 *initializeDisplay();
+        Adafruit_GFX *initializeDisplay();
 
         /**
-         * Create DisplayConfig from Kconfig values
-         * Fills protocol, pins, and dimensions
+         * Returns the flushable SSD1306 adapter backing the display object.
+         */
+        ::BotiEyes::DisplayFlushable *initializeDisplayFlushable();
+
+        /**
+         * Create DisplayConfig from Kconfig values.
+         * Fills protocol, pins, and dimensions.
          */
         DisplayConfig createDisplayConfig();
 

@@ -5,7 +5,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include "esp_ssd1306.h"
+#include <Adafruit_GFX.h>
 #include "display_init.h"
 #include "wifi_init.h"
 #include "BotiEyes.h"
@@ -110,8 +110,9 @@ extern "C" void app_main(void)
 
     // Step 2: Initialize OLED display
     ESP_LOGI(TAG, "Initializing OLED display");
-    BotiEyes::display::ESP_SSD1306 *display = BotiEyes::display::initializeDisplay();
-    if (!display)
+    auto *display = BotiEyes::display::initializeDisplay();
+    auto *flushable = BotiEyes::display::initializeDisplayFlushable();
+    if (!display || !flushable)
     {
         ESP_LOGE(TAG, "Display initialization failed!");
         set_status_led(255, 0, 0); // Red: error
@@ -125,7 +126,7 @@ extern "C" void app_main(void)
     ESP_LOGI(TAG, "Initializing BotiEyes library");
     s_eyes = new BotiEyes::BotiEyes();
     s_eyes->initialize(displayConfig);
-    s_eyes->setDisplay(static_cast<Adafruit_GFX *>(display));
+    s_eyes->setDisplay(display, flushable);
 
     // Set neutral expression (valence=0.0, arousal=0.5)
     s_eyes->setEmotion(0.0f, 0.5f, 500);

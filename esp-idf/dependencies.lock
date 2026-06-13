@@ -20,10 +20,17 @@ dependencies:
     source:
       type: idf
     version: 6.0.1
+  nopnop2002/ssd1306:
+    dependencies: []
+    source:
+      path: ../../esp-idf-ssd1306/components/ssd1306
+      type: local
+    version: '*'
 direct_dependencies:
 - espressif/led_strip
 - fasani/adafruit_gfx
 - idf
-manifest_hash: 88b28bee66baa0310ba374786debd02cb1ec76933f7b600b07a81817be32776d
+- nopnop2002/ssd1306
+manifest_hash: 3ae3b6981e6092c42d2de0ff5120f82bbba6a86b8dde09db825670a57152c9ba
 target: esp32s3
 version: 3.0.0

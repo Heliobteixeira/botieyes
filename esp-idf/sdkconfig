@@ -1011,7 +1011,33 @@ CONFIG_BOTIEYES_OLED_SCL_PIN=15
 CONFIG_BOTIEYES_OLED_I2C_ADDRESS=0x3C
 # default:
 CONFIG_BOTIEYES_OLED_RST_PIN=16
+# default:
+CONFIG_BOTIEYES_SPI_CLOCK_SPEED_HZ=10000000
 # end of BotiEyes Network Control
+
+#
+# SSD1306 Configuration
+#
+# CONFIG_I2C_INTERFACE is not set
+CONFIG_SPI_INTERFACE=y
+# default:
+# CONFIG_SSD1306_128x32 is not set
+# default:
+CONFIG_SSD1306_128x64=y
+# default:
+CONFIG_OFFSETX=0
+# default:
+# CONFIG_FLIP is not set
+CONFIG_MOSI_GPIO=11
+CONFIG_SCLK_GPIO=12
+CONFIG_CS_GPIO=10
+CONFIG_DC_GPIO=9
+CONFIG_RESET_GPIO=8
+# default:
+CONFIG_SPI2_HOST=y
+# default:
+# CONFIG_SPI3_HOST is not set
+# end of SSD1306 Configuration
 
 #
 # Compiler options

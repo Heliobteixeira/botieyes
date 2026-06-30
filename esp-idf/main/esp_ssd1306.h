@@ -3,6 +3,7 @@
 
 #include <Adafruit_GFX.h>
 #include "esp_err.h"
+#include "esp_idf_version.h"  // Required before ssd1306.h for ESP_IDF_VERSION_VAL macro
 #include "ssd1306.h"
 
 namespace BotiEyes

@@ -1,6 +1,7 @@
 #ifndef DISPLAY_INIT_H
 #define DISPLAY_INIT_H
 
+#include "esp_idf_version.h"  // Required before any ssd1306.h inclusion
 #include <Adafruit_GFX.h>
 #include "DisplayConfig.h"
 #include "BotiEyes.h"

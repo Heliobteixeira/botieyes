@@ -53,9 +53,10 @@
 // Event Infrastructure (FR-005, FR-012, FR-025, FR-029) - T038
 // ============================================================================
 
-// Custom event bases for application-level events
-ESP_EVENT_DEFINE_BASE(WIFI_MGR_EVENT);    // WiFi manager events (connected, disconnected, failed)
-ESP_EVENT_DEFINE_BASE(APP_STATE_EVENT);   // Application state machine events (state transitions)
+// Event bases are defined in their owning component files:
+// - WIFI_MGR_EVENT defined in components/wifi_manager/src/wifi_manager.c
+// - APP_STATE_EVENT defined in components/state_machine/src/app_state.c
+// Headers provide ESP_EVENT_DECLARE_BASE() for use in other files
 
 // ============================================================================
 // Network Command Queue (FR-006, FR-013) - T039, T040

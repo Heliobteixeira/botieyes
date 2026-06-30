@@ -1,5 +1,5 @@
 idf_component_register(
-    SRCS "app_task.cpp" "main.cpp" "display_init.cpp" "wifi_init.cpp"
+    SRCS "app_task.cpp" "main.cpp" "esp_ssd1306.cpp" "display_init.cpp"
     PRIV_REQUIRES 
         led_strip 
         botieyes 

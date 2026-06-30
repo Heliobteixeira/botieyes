@@ -42,7 +42,7 @@ esp_err_t hal_board_init(void)
 #elif defined(CONFIG_BOTIEYES_LED_TYPE_GPIO)
     ESP_LOGI(TAG, "LED: GPIO (pin=%d)", CONFIG_BOTIEYES_LED_GPIO_PIN);
 #elif defined(CONFIG_BOTIEYES_LED_TYPE_WS2812)
-    ESP_LOGI(TAG, "LED: WS2812 (pin=%d)", CONFIG_BOTIEYES_LED_WS2812_PIN);
+    ESP_LOGI(TAG, "LED: WS2812 (pin=%d)", CONFIG_BOTIEYES_LED_WS2812_GPIO);
 #endif
 
     // Initialize display

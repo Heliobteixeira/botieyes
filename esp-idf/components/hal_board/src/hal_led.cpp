@@ -49,14 +49,24 @@ esp_err_t hal_led_init(void)
 #ifdef CONFIG_BOTIEYES_LED_TYPE_WS2812
     ESP_LOGI(TAG, "Initializing WS2812 LED on GPIO %d", CONFIG_BOTIEYES_LED_WS2812_GPIO);
     
-    led_strip_config_t strip_config = {};
-    strip_config.strip_gpio_num = CONFIG_BOTIEYES_LED_WS2812_GPIO;
-    strip_config.max_leds = 1;
-    strip_config.led_pixel_format = LED_PIXEL_FORMAT_GRB;
-    strip_config.led_model = LED_MODEL_WS2812;
+    led_strip_config_t strip_config = {
+        .strip_gpio_num = CONFIG_BOTIEYES_LED_WS2812_GPIO,
+        .max_leds = 1,
+        .led_model = LED_MODEL_WS2812,
+        .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB,
+        .flags = {
+            .invert_out = false
+        }
+    };
     
-    led_strip_rmt_config_t rmt_config = {};
-    rmt_config.resolution_hz = 10 * 1000 * 1000; // 10 MHz
+    led_strip_rmt_config_t rmt_config = {
+        .clk_src = RMT_CLK_SRC_DEFAULT,
+        .resolution_hz = 10 * 1000 * 1000, // 10 MHz
+        .mem_block_symbols = 0,
+        .flags = {
+            .with_dma = false
+        }
+    };
     
     esp_err_t ret = led_strip_new_rmt_device(&strip_config, &rmt_config, &s_led_strip);
     if (ret != ESP_OK) {

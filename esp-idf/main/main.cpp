@@ -28,9 +28,11 @@
 #include "app_state.h"
 #include "config_manager.h"
 #include "health_monitor.h"  // T091: Health monitor integration
+#include "hal_board.h"       // T109: HAL board abstraction (LED only, display TBD)
+#include "hal_led.h"         // Direct LED access
 
 #include <Adafruit_GFX.h>
-#include "display_init.h"
+#include "display_init.h"    // Legacy display init (hal_display_spi.c incomplete)
 #include "BotiEyes.h"
 #include "net/BotiEyesServer.h"
 
@@ -126,13 +128,25 @@ static bool configure_status_led(void)
         return false;
     }
 
-    // Let driver auto-detect LED type (official blink example style)
-    led_strip_config_t strip_config = {};
-    strip_config.strip_gpio_num = CONFIG_BOTIEYES_STATUS_LED_PIN;
-    strip_config.max_leds = 1;
+    // Configure WS2812 LED using updated API
+    led_strip_config_t strip_config = {
+        .strip_gpio_num = CONFIG_BOTIEYES_STATUS_LED_PIN,
+        .max_leds = 1,
+        .led_model = LED_MODEL_WS2812,
+        .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB,
+        .flags = {
+            .invert_out = false
+        }
+    };
 
-    led_strip_rmt_config_t rmt_config = {};
-    rmt_config.resolution_hz = 10 * 1000 * 1000;
+    led_strip_rmt_config_t rmt_config = {
+        .clk_src = RMT_CLK_SRC_DEFAULT,
+        .resolution_hz = 10 * 1000 * 1000, // 10 MHz
+        .mem_block_symbols = 0,
+        .flags = {
+            .with_dma = false
+        }
+    };
 
     ESP_ERROR_CHECK(led_strip_new_rmt_device(&strip_config, &rmt_config, &s_status_led));
     led_strip_clear(s_status_led);

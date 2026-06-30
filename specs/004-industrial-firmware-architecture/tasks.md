@@ -23,12 +23,12 @@
 
 **Purpose**: Project initialization and basic directory structure per plan.md
 
-- [ ] T001 Create component directory structure: mkdir -p esp-idf/components/{wifi_manager,state_machine,config_manager,health_monitor,hal_board}/{include,src}
-- [ ] T002 Create board config subdirectories: mkdir -p esp-idf/components/hal_board/src/boards
-- [ ] T003 [P] Create sdkconfig.defaults.ttgo_lora32 with TTGO LoRa32 board defaults (I2C display, GPIO2 LED)
-- [ ] T004 [P] Create sdkconfig.defaults.esp32s3_spi with ESP32-S3 SPI variant defaults (SPI display, WS2812 LED)
-- [ ] T005 Create main/app_task.h header with application task declarations
-- [ ] T006 Create main/app_task.cpp stub with basic application task structure
+- [X] T001 Create component directory structure: mkdir -p esp-idf/components/{wifi_manager,state_machine,config_manager,health_monitor,hal_board}/{include,src}
+- [X] T002 Create board config subdirectories: mkdir -p esp-idf/components/hal_board/src/boards
+- [X] T003 [P] Create sdkconfig.defaults.ttgo_lora32 with TTGO LoRa32 board defaults (I2C display, GPIO2 LED)
+- [X] T004 [P] Create sdkconfig.defaults.esp32s3_spi with ESP32-S3 SPI variant defaults (SPI display, WS2812 LED)
+- [X] T005 Create main/app_task.h header with application task declarations
+- [X] T006 Create main/app_task.cpp stub with basic application task structure
 
 **Checkpoint**: Directory structure ready, board configs defined
 
@@ -40,12 +40,12 @@
 
 **⚠️ CRITICAL**: No user story implementation can begin until this phase completes
 
-- [ ] T007 Refactor main/main.cpp: Extract ESP-IDF initialization sequence (NVS, event loop, netif) from existing app_main()
-- [ ] T008 Create global network command queue definition in main/main.cpp: QueueHandle_t g_network_cmd_queue
-- [ ] T009 Define task priority constants in main/main.cpp: CRITICAL, HIGH, NORMAL, LOW (per FR-031)
-- [ ] T010 Define task stack size constants in main/main.cpp: LARGE (8KB), MEDIUM (4KB), SMALL (2KB) (per FR-032)
-- [ ] T011 Update main/CMakeLists.txt to declare component dependencies: wifi_manager, state_machine, config_manager, health_monitor, hal_board
-- [ ] T012 Document initialization sequence in main/main.cpp header comments (boot flow from data-model.md Section 10)
+- [X] T007 Refactor main/main.cpp: Extract ESP-IDF initialization sequence (NVS, event loop, netif) from existing app_main()
+- [X] T008 Create global network command queue definition in main/main.cpp: QueueHandle_t g_network_cmd_queue
+- [X] T009 Define task priority constants in main/main.cpp: CRITICAL, HIGH, NORMAL, LOW (per FR-031)
+- [X] T010 Define task stack size constants in main/main.cpp: LARGE (8KB), MEDIUM (4KB), SMALL (2KB) (per FR-032)
+- [X] T011 Update main/CMakeLists.txt to declare component dependencies: wifi_manager, state_machine, config_manager, health_monitor, hal_board
+- [X] T012 Document initialization sequence in main/main.cpp header comments (boot flow from data-model.md Section 10)
 
 **Checkpoint**: Foundation ready - component development can proceed in parallel
 
@@ -59,26 +59,26 @@
 
 ### Component Structure Setup (All Parallel)
 
-- [ ] T013 [P] [US1] Create esp-idf/components/wifi_manager/CMakeLists.txt with idf_component_register (SRCS, INCLUDE_DIRS, REQUIRES esp_wifi esp_event nvs_flash config_manager)
-- [ ] T014 [P] [US1] Create esp-idf/components/wifi_manager/Kconfig for WiFi-specific build config (max retry, timeouts)
-- [ ] T015 [P] [US1] Create esp-idf/components/state_machine/CMakeLists.txt with idf_component_register (REQUIRES esp_event esp_system)
-- [ ] T016 [P] [US1] Create esp-idf/components/state_machine/Kconfig for state machine config
-- [ ] T017 [P] [US1] Create esp-idf/components/config_manager/CMakeLists.txt with idf_component_register (REQUIRES nvs_flash)
-- [ ] T018 [P] [US1] Create esp-idf/components/config_manager/Kconfig for NVS namespace config
-- [ ] T019 [P] [US1] Create esp-idf/components/health_monitor/CMakeLists.txt with idf_component_register (REQUIRES esp_system esp_task_wdt config_manager)
-- [ ] T020 [P] [US1] Create esp-idf/components/health_monitor/Kconfig for watchdog timeout config
-- [ ] T021 [P] [US1] Create esp-idf/components/hal_board/CMakeLists.txt with idf_component_register (REQUIRES driver led_strip, conditional SRCS based on Kconfig)
-- [ ] T022 [P] [US1] Create esp-idf/components/hal_board/Kconfig for board selection (TTGO_LORA32, ESP32S3_SPI) and display protocol (I2C, SPI)
+- [X] T013 [P] [US1] Create esp-idf/components/wifi_manager/CMakeLists.txt with idf_component_register (SRCS, INCLUDE_DIRS, REQUIRES esp_wifi esp_event nvs_flash config_manager)
+- [X] T014 [P] [US1] Create esp-idf/components/wifi_manager/Kconfig for WiFi-specific build config (max retry, timeouts)
+- [X] T015 [P] [US1] Create esp-idf/components/state_machine/CMakeLists.txt with idf_component_register (REQUIRES esp_event esp_system)
+- [X] T016 [P] [US1] Create esp-idf/components/state_machine/Kconfig for state machine config
+- [X] T017 [P] [US1] Create esp-idf/components/config_manager/CMakeLists.txt with idf_component_register (REQUIRES nvs_flash)
+- [X] T018 [P] [US1] Create esp-idf/components/config_manager/Kconfig for NVS namespace config
+- [X] T019 [P] [US1] Create esp-idf/components/health_monitor/CMakeLists.txt with idf_component_register (REQUIRES esp_system esp_task_wdt config_manager)
+- [X] T020 [P] [US1] Create esp-idf/components/health_monitor/Kconfig for watchdog timeout config
+- [X] T021 [P] [US1] Create esp-idf/components/hal_board/CMakeLists.txt with idf_component_register (REQUIRES driver led_strip, conditional SRCS based on Kconfig)
+- [X] T022 [P] [US1] Create esp-idf/components/hal_board/Kconfig for board selection (TTGO_LORA32, ESP32S3_SPI) and display protocol (I2C, SPI)
 
 ### Public API Headers (All Parallel - Foundation for Other Stories)
 
-- [ ] T023 [P] [US1] Create esp-idf/components/wifi_manager/include/wifi_manager.h with API from contracts/component-api.md Section 1
-- [ ] T024 [P] [US1] Create esp-idf/components/state_machine/include/app_state.h with API from contracts/component-api.md Section 2
-- [ ] T025 [P] [US1] Create esp-idf/components/config_manager/include/config_manager.h with API from contracts/component-api.md Section 3
-- [ ] T026 [P] [US1] Create esp-idf/components/health_monitor/include/health_monitor.h with API from contracts/component-api.md Section 4
-- [ ] T027 [P] [US1] Create esp-idf/components/hal_board/include/hal_board.h with board init API from contracts/component-api.md Section 5
-- [ ] T028 [P] [US1] Create esp-idf/components/hal_board/include/hal_display.h with display abstraction API
-- [ ] T029 [P] [US1] Create esp-idf/components/hal_board/include/hal_led.h with LED abstraction API
+- [X] T023 [P] [US1] Create esp-idf/components/wifi_manager/include/wifi_manager.h with API from contracts/component-api.md Section 1
+- [X] T024 [P] [US1] Create esp-idf/components/state_machine/include/app_state.h with API from contracts/component-api.md Section 2
+- [X] T025 [P] [US1] Create esp-idf/components/config_manager/include/config_manager.h with API from contracts/component-api.md Section 3
+- [X] T026 [P] [US1] Create esp-idf/components/health_monitor/include/health_monitor.h with API from contracts/component-api.md Section 4
+- [X] T027 [P] [US1] Create esp-idf/components/hal_board/include/hal_board.h with board init API from contracts/component-api.md Section 5
+- [X] T028 [P] [US1] Create esp-idf/components/hal_board/include/hal_display.h with display abstraction API
+- [X] T029 [P] [US1] Create esp-idf/components/hal_board/include/hal_led.h with LED abstraction API
 
 **Checkpoint**: All components have proper structure (CMakeLists.txt, Kconfig, public headers). Components can now be implemented independently.
 
@@ -92,17 +92,17 @@
 
 ### Board Configuration Files (All Parallel)
 
-- [ ] T030 [P] [US3] Create esp-idf/components/hal_board/src/boards/ttgo_lora32.c with hal_board_config_t for TTGO LoRa32 (I2C display: SDA=GPIO4, SCL=GPIO15, addr=0x3C; LED: GPIO2)
-- [ ] T031 [P] [US3] Create esp-idf/components/hal_board/src/boards/esp32s3_spi.c with hal_board_config_t for ESP32-S3 SPI (SPI display: MOSI=GPIO11, SCK=GPIO12, CS=GPIO10, DC=GPIO13, RST=GPIO14; LED: WS2812 GPIO38)
+- [X] T030 [P] [US3] Create esp-idf/components/hal_board/src/boards/ttgo_lora32.c with hal_board_config_t for TTGO LoRa32 (I2C display: SDA=GPIO4, SCL=GPIO15, addr=0x3C; LED: GPIO2)
+- [X] T031 [P] [US3] Create esp-idf/components/hal_board/src/boards/esp32s3_spi.c with hal_board_config_t for ESP32-S3 SPI (SPI display: MOSI=GPIO11, SCK=GPIO12, CS=GPIO10, DC=GPIO13, RST=GPIO14; LED: WS2812 GPIO38)
 
 ### HAL Implementation
 
-- [ ] T032 [US3] Implement esp-idf/components/hal_board/src/hal_board.c: hal_board_init() that selects board config via Kconfig and calls display/LED init (FR-035)
-- [ ] T033 [P] [US3] Implement esp-idf/components/hal_board/src/hal_display_i2c.c: I2C SSD1306 display driver using Adafruit_GFX (FR-036)
-- [ ] T034 [P] [US3] Implement esp-idf/components/hal_board/src/hal_display_spi.c: SPI SSD1306 display driver using Adafruit_GFX (FR-036)
-- [ ] T035 [US3] Implement esp-idf/components/hal_board/src/hal_display.c: Display abstraction layer that conditionally compiles I2C or SPI based on CONFIG_BOTIEYES_OLED_PROTOCOL (FR-036, FR-050)
-- [ ] T036 [US3] Add display mutex (g_display_mutex) in hal_display.c: Create in hal_display_init(), protect all hardware access (FR-014)
-- [ ] T037 [US3] Implement esp-idf/components/hal_board/src/hal_led.cpp: LED abstraction supporting GPIO and WS2812 types, with no-op when disabled (FR-037)
+- [X] T032 [US3] Implement esp-idf/components/hal_board/src/hal_board.c: hal_board_init() that selects board config via Kconfig and calls display/LED init (FR-035)
+- [X] T033 [P] [US3] Implement esp-idf/components/hal_board/src/hal_display_i2c.c: I2C SSD1306 display driver using Adafruit_GFX (FR-036)
+- [X] T034 [P] [US3] Implement esp-idf/components/hal_board/src/hal_display_spi.c: SPI SSD1306 display driver using Adafruit_GFX (FR-036)
+- [X] T035 [US3] Implement esp-idf/components/hal_board/src/hal_display.c: Display abstraction layer that conditionally compiles I2C or SPI based on CONFIG_BOTIEYES_OLED_PROTOCOL (FR-036, FR-050)
+- [X] T036 [US3] Add display mutex (g_display_mutex) in hal_display.c: Create in hal_display_init(), protect all hardware access (FR-014)
+- [X] T037 [US3] Implement esp-idf/components/hal_board/src/hal_led.cpp: LED abstraction supporting GPIO and WS2812 types, with no-op when disabled (FR-037)
 
 **Checkpoint**: HAL layer complete. Applications can use hal_display_* and hal_led_* APIs without knowing hardware details. Build system selects correct implementation at compile time.
 
@@ -116,15 +116,15 @@
 
 ### Event Infrastructure
 
-- [ ] T038 [US4] Define custom event bases in main/main.cpp: ESP_EVENT_DEFINE_BASE(WIFI_MGR_EVENT) and ESP_EVENT_DEFINE_BASE(APP_STATE_EVENT) (FR-005, FR-012, FR-025, FR-029)
-- [ ] T039 [US4] Create network command queue in main/main.cpp app_main(): g_network_cmd_queue = xQueueCreate(10, sizeof(network_cmd_t)) (FR-006, FR-013)
-- [ ] T040 [US4] Define network_cmd_t structure in main/main.cpp with type enum (SET_EMOTION, SET_POSITION, IDLE_MODE, PING, RESET) and 64-byte payload (data-model.md Section 8)
+- [X] T038 [US4] Define custom event bases in main/main.cpp: ESP_EVENT_DEFINE_BASE(WIFI_MGR_EVENT) and ESP_EVENT_DEFINE_BASE(APP_STATE_EVENT) (FR-005, FR-012, FR-025, FR-029)
+- [X] T039 [US4] Create network command queue in main/main.cpp app_main(): g_network_cmd_queue = xQueueCreate(10, sizeof(network_cmd_t)) (FR-006, FR-013)
+- [X] T040 [US4] Define network_cmd_t structure in main/main.cpp with type enum (SET_EMOTION, SET_POSITION, IDLE_MODE, PING, RESET) and 64-byte payload (data-model.md Section 8)
 
 ### Queue Integration
 
-- [ ] T041 [US4] Refactor BotiEyes/src/net/BotiEyesServer.cpp poll(): Replace direct application of commands with xQueueSend(g_network_cmd_queue, ..., pdMS_TO_TICKS(100)) (FR-013, FR-016)
-- [ ] T042 [US4] Implement network command processing in main/app_task.cpp: xQueueReceive(g_network_cmd_queue, ..., pdMS_TO_TICKS(100)) and apply to BotiEyes instance (FR-006, FR-016)
-- [ ] T043 [US4] Add queue full handling in BotiEyesServer: Log warning and drop packet when xQueueSend fails (FR-016, FR-017)
+- [X] T041 [US4] Refactor BotiEyes/src/net/BotiEyesServer.cpp poll(): Replace direct application of commands with xQueueSend(g_network_cmd_queue, ..., pdMS_TO_TICKS(100)) (FR-013, FR-016)
+- [X] T042 [US4] Implement network command processing in main/app_task.cpp: xQueueReceive(g_network_cmd_queue, ..., pdMS_TO_TICKS(100)) and apply to BotiEyes instance (FR-006, FR-016)
+- [X] T043 [US4] Add queue full handling in BotiEyesServer: Log warning and drop packet when xQueueSend fails (FR-016, FR-017)
 
 **Checkpoint**: Event-driven communication operational. WiFi manager and state machine can post events; network commands flow through queue to application task. No busy-waiting or blocking forever (FR-011, FR-016).
 
@@ -138,15 +138,15 @@
 
 ### Task Creation
 
-- [ ] T044 [US8] Refactor main/app_task.cpp: Move existing main loop logic into proper FreeRTOS task function void app_task(void *arg) with watchdog feeding (FR-033, FR-040)
-- [ ] T045 [US8] Create application task in main/main.cpp: xTaskCreatePinnedToCore(app_task, "app", TASK_STACK_MEDIUM, NULL, TASK_PRIORITY_NORMAL, NULL, 1) - core 1 for rendering (FR-031, FR-032, FR-033)
-- [ ] T046 [US8] Create network task in main/main.cpp: xTaskCreatePinnedToCore(network_task, "network", TASK_STACK_MEDIUM, NULL, TASK_PRIORITY_HIGH, NULL, 0) - core 0 for network I/O (FR-031, FR-032, FR-033)
-- [ ] T047 [US8] Implement network_task function in main/main.cpp: Call BotiEyesServer::poll() and queue commands, feed watchdog (FR-033, FR-040)
+- [X] T044 [US8] Refactor main/app_task.cpp: Move existing main loop logic into proper FreeRTOS task function void app_task(void *arg) with watchdog feeding (FR-033, FR-040)
+- [X] T045 [US8] Create application task in main/main.cpp: xTaskCreatePinnedToCore(app_task, "app", TASK_STACK_MEDIUM, NULL, TASK_PRIORITY_NORMAL, NULL, 1) - core 1 for rendering (FR-031, FR-032, FR-033)
+- [X] T046 [US8] Create network task in main/main.cpp: xTaskCreatePinnedToCore(network_task, "network", TASK_STACK_MEDIUM, NULL, TASK_PRIORITY_HIGH, NULL, 0) - core 0 for network I/O (FR-031, FR-032, FR-033)
+- [X] T047 [US8] Implement network_task function in main/main.cpp: Call BotiEyesServer::poll() and queue commands, feed watchdog (FR-033, FR-040)
 
 ### Task Monitoring
 
-- [ ] T048 [US8] Add stack watermark monitoring in main/app_task.cpp: Periodically call uxTaskGetStackHighWaterMark() and log warning if < 512 bytes (FR-034)
-- [ ] T049 [US8] Add stack watermark monitoring in network task: Same as T048 for network_task (FR-034)
+- [X] T048 [US8] Add stack watermark monitoring in main/app_task.cpp: Periodically call uxTaskGetStackHighWaterMark() and log warning if < 512 bytes (FR-034)
+- [X] T049 [US8] Add stack watermark monitoring in network task: Same as T048 for network_task (FR-034)
 
 **Checkpoint**: Multi-task architecture operational. Application task on core 1 handles rendering; network task on core 0 handles UDP. Proper priorities prevent deadline misses.
 
@@ -160,19 +160,19 @@
 
 ### WiFi Manager Implementation
 
-- [ ] T050 [P] [US2] Implement esp-idf/components/wifi_manager/src/wifi_manager.c: wifi_manager_init() - initialize ESP WiFi, netif, register for WIFI_EVENT and IP_EVENT (FR-022)
-- [ ] T051 [P] [US2] Implement wifi_manager credential storage: wifi_manager_set_credentials() and wifi_manager_get_credentials() using config_manager (FR-019, FR-024)
-- [ ] T052 [US2] Implement esp-idf/components/wifi_manager/src/wifi_events.c: Event handlers for WIFI_EVENT_STA_DISCONNECTED, IP_EVENT_STA_GOT_IP (FR-022)
-- [ ] T053 [US2] Add exponential backoff retry logic in wifi_events.c: Retry up to 5 times with increasing delays before posting WIFI_MGR_FAILED (FR-023)
-- [ ] T054 [US2] Implement wifi_manager_connect() in wifi_manager.c: Start connection attempt, post WIFI_MGR_CONNECTING event (FR-025)
-- [ ] T055 [US2] Implement wifi_manager_disconnect() in wifi_manager.c: Stop connection, post WIFI_MGR_DISCONNECTED event (FR-025)
-- [ ] T056 [US2] Implement wifi_manager_get_state() in wifi_manager.c: Return current state with mutex protection (FR-024)
-- [ ] T057 [US2] Implement wifi_manager_get_ip_address() in wifi_manager.c: Return IP as string or NULL (FR-024)
+- [X] T050 [P] [US2] Implement esp-idf/components/wifi_manager/src/wifi_manager.c: wifi_manager_init() - initialize ESP WiFi, netif, register for WIFI_EVENT and IP_EVENT (FR-022)
+- [X] T051 [P] [US2] Implement wifi_manager credential storage: wifi_manager_set_credentials() and wifi_manager_get_credentials() using config_manager (FR-019, FR-024)
+- [X] T052 [US2] Implement esp-idf/components/wifi_manager/src/wifi_events.c: Event handlers for WIFI_EVENT_STA_DISCONNECTED, IP_EVENT_STA_GOT_IP (FR-022)
+- [X] T053 [US2] Add exponential backoff retry logic in wifi_events.c: Retry up to 5 times with increasing delays before posting WIFI_MGR_FAILED (FR-023)
+- [X] T054 [US2] Implement wifi_manager_connect() in wifi_manager.c: Start connection attempt, post WIFI_MGR_CONNECTING event (FR-025)
+- [X] T055 [US2] Implement wifi_manager_disconnect() in wifi_manager.c: Stop connection, post WIFI_MGR_DISCONNECTED event (FR-025)
+- [X] T056 [US2] Implement wifi_manager_get_state() in wifi_manager.c: Return current state with mutex protection (FR-024)
+- [X] T057 [US2] Implement wifi_manager_get_ip_address() in wifi_manager.c: Return IP as string or NULL (FR-024)
 
 ### WiFi Integration
 
-- [ ] T058 [US2] Integrate wifi_manager in main/main.cpp: Call wifi_manager_init(), wifi_manager_connect() after component init
-- [ ] T059 [US2] Add WiFi event handlers in main/main.cpp: Register handlers for WIFI_MGR_CONNECTED, WIFI_MGR_FAILED to update status LED and trigger state transitions
+- [X] T058 [US2] Integrate wifi_manager in main/main.cpp: Call wifi_manager_init(), wifi_manager_connect() after component init
+- [X] T059 [US2] Add WiFi event handlers in main/main.cpp: Register handlers for WIFI_MGR_CONNECTED, WIFI_MGR_FAILED to update status LED and trigger state transitions
 - [ ] T060 [US2] Update main/Kconfig.projbuild: Move WiFi SSID/password to wifi_manager component Kconfig for proper organization
 
 **Checkpoint**: WiFi connectivity managed by dedicated service. Auto-reconnection works. Status LED reflects connection state. WiFi events drive application state transitions.
@@ -187,20 +187,20 @@
 
 ### State Machine Implementation
 
-- [ ] T061 [P] [US7] Implement esp-idf/components/state_machine/src/app_state.c: app_state_init() - create state mutex, initialize to INIT state (FR-028)
-- [ ] T062 [US7] Implement state transition validation in app_state.c: app_state_transition() checks valid transitions per data-model.md Section 2 (FR-027)
-- [ ] T063 [US7] Add state mutex protection in app_state.c: All state access wrapped in xSemaphoreTake/Give with 100ms timeout (FR-015, FR-017, FR-028)
-- [ ] T064 [US7] Implement state event posting in app_state.c: Post APP_STATE_EVENT:STATE_CHANGED with app_state_info_t payload after transition (FR-029)
-- [ ] T065 [US7] Implement app_state_get_current() and app_state_get_info() in app_state.c with mutex protection (FR-030)
-- [ ] T066 [US7] Implement app_state_set_error() convenience function in app_state.c: Transition to ERROR state with message (FR-030)
+- [X] T061 [P] [US7] Implement esp-idf/components/state_machine/src/app_state.c: app_state_init() - create state mutex, initialize to INIT state (FR-028)
+- [X] T062 [US7] Implement state transition validation in app_state.c: app_state_transition() checks valid transitions per data-model.md Section 2 (FR-027)
+- [X] T063 [US7] Add state mutex protection in app_state.c: All state access wrapped in xSemaphoreTake/Give with 100ms timeout (FR-015, FR-017, FR-028)
+- [X] T064 [US7] Implement state event posting in app_state.c: Post APP_STATE_EVENT:STATE_CHANGED with app_state_info_t payload after transition (FR-029)
+- [X] T065 [US7] Implement app_state_get_current() and app_state_get_info() in app_state.c with mutex protection (FR-030)
+- [X] T066 [US7] Implement app_state_set_error() convenience function in app_state.c: Transition to ERROR state with message (FR-030)
 
 ### State Machine Integration
 
-- [ ] T067 [US7] Integrate state_machine in main/main.cpp: Call app_state_init() early in app_main()
-- [ ] T068 [US7] Add state transition calls in main/main.cpp: app_state_transition(CONNECTING) before WiFi connect, app_state_transition(CONNECTED) on WiFi success (FR-026)
-- [ ] T069 [US7] Register state change event handler in main/main.cpp: Log all state transitions with previous/current state and timestamp (FR-046)
-- [ ] T070 [US7] Add app_state_transition(RUNNING) in main/app_task.cpp when network server starts accepting commands (FR-026)
-- [ ] T071 [US7] Add error state handling in main/main.cpp: Transition to ERROR state on critical failures, implement recovery logic (FR-026)
+- [X] T067 [US7] Integrate state_machine in main/main.cpp: Call app_state_init() early in app_main()
+- [X] T068 [US7] Add state transition calls in main/main.cpp: app_state_transition(CONNECTING) before WiFi connect, app_state_transition(CONNECTED) on WiFi success (FR-026)
+- [X] T069 [US7] Register state change event handler in main/main.cpp: Log all state transitions with previous/current state and timestamp (FR-046)
+- [X] T070 [US7] Add app_state_transition(RUNNING) in main/app_task.cpp when network server starts accepting commands (FR-026)
+- [X] T071 [US7] Add error state handling in main/main.cpp: Transition to ERROR state on critical failures, implement recovery logic (FR-026)
 
 **Checkpoint**: State machine operational. All state transitions validated and logged. Application behavior predictable. State events observable by other components.
 
@@ -214,17 +214,17 @@
 
 ### Config Manager Implementation
 
-- [ ] T072 [P] [US5] Implement esp-idf/components/config_manager/src/config_manager.c: config_manager_init() - open NVS namespaces (botieyes_wifi, botieyes_app, botieyes_sys) (FR-019)
-- [ ] T073 [P] [US5] Implement WiFi config functions in config_manager.c: config_get_wifi(), config_set_wifi() with NVS read/write (FR-019)
-- [ ] T074 [P] [US5] Implement app config functions in config_manager.c: config_get_app(), config_set_app() for brightness, idle_timeout, network_enabled (FR-019)
-- [ ] T075 [P] [US5] Implement crash log functions in config_manager.c: config_get_crash_log(), config_set_crash_log() (FR-041)
-- [ ] T076 [US5] Implement config_factory_reset() in config_manager.c: Erase botieyes_wifi and botieyes_app namespaces, preserve botieyes_sys (FR-021)
-- [ ] T077 [US5] Add NVS error handling in config_manager.c: Handle corruption (erase and reinit), full NVS (log error), missing keys (return defaults) (Edge case handling)
+- [X] T072 [P] [US5] Implement esp-idf/components/config_manager/src/config_manager.c: config_manager_init() - open NVS namespaces (botieyes_wifi, botieyes_app, botieyes_sys) (FR-019)
+- [X] T073 [P] [US5] Implement WiFi config functions in config_manager.c: config_get_wifi(), config_set_wifi() with NVS read/write (FR-019)
+- [X] T074 [P] [US5] Implement app config functions in config_manager.c: config_get_app(), config_set_app() for brightness, idle_timeout, network_enabled (FR-019)
+- [X] T075 [P] [US5] Implement crash log functions in config_manager.c: config_get_crash_log(), config_set_crash_log() (FR-041)
+- [X] T076 [US5] Implement config_factory_reset() in config_manager.c: Erase botieyes_wifi and botieyes_app namespaces, preserve botieyes_sys (FR-021)
+- [X] T077 [US5] Add NVS error handling in config_manager.c: Handle corruption (erase and reinit), full NVS (log error), missing keys (return defaults) (Edge case handling)
 
 ### Config Manager Integration
 
-- [ ] T078 [US5] Integrate config_manager in main/main.cpp: Call config_manager_init() after NVS flash init
-- [ ] T079 [US5] Update wifi_manager to use config_manager for credential storage instead of direct NVS access
+- [X] T078 [US5] Integrate config_manager in main/main.cpp: Call config_manager_init() after NVS flash init
+- [X] T079 [US5] Update wifi_manager to use config_manager for credential storage instead of direct NVS access
 - [ ] T080 [US5] Document Kconfig vs NVS split in main/Kconfig.projbuild comments: Build-time (board, features) vs runtime (WiFi, app settings) (FR-018, FR-019)
 
 **Checkpoint**: Configuration management abstraction operational. WiFi credentials persist across reboots. Factory reset functionality available. Config defaults loaded from Kconfig when NVS empty.

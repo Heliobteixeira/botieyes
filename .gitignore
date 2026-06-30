@@ -48,6 +48,9 @@ Thumbs.db
 *.bak
 *.cache
 
+# ESP-IDF Build Artifacts
+sdkconfig.old
+
 # Environment Variables
 .env
 .env.*

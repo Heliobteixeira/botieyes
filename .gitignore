@@ -75,3 +75,14 @@ desktop.ini
 # Emulator frame captures (User Story 2)
 emulator/captures/
 captures/
+
+# ESP-IDF Build System
+esp-idf/build/
+esp-idf/sdkconfig
+esp-idf/sdkconfig.old
+esp-idf/managed_components/
+esp-idf/dependencies.lock
+esp-idf/.config/
+*.bin
+*.elf
+*.map

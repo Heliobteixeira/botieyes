@@ -12,6 +12,7 @@
 #include <esp_wifi.h>
 #include <esp_netif.h>
 #include <esp_event.h>
+#include <nvs.h>
 #include <string.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
@@ -72,14 +73,14 @@ esp_err_t wifi_manager_init(void)
     // Create state mutex (FR-024)
     s_state_mutex = xSemaphoreCreateMutex();
     if (s_state_mutex == NULL) {
-        ESP_LOGE(TAG, "Failed to create state mutex");
+        ESP_LOGE(TAG, "Failed to create state mutex (error=ESP_ERR_NO_MEM)");
         return ESP_ERR_NO_MEM;
     }
     
     // Create default WiFi station netif
     s_sta_netif = esp_netif_create_default_wifi_sta();
     if (s_sta_netif == NULL) {
-        ESP_LOGE(TAG, "Failed to create WiFi station netif");
+        ESP_LOGE(TAG, "Failed to create WiFi station netif (error=ESP_FAIL)");
         return ESP_FAIL;
     }
     
@@ -154,7 +155,8 @@ esp_err_t wifi_manager_set_credentials(const char *ssid, const char *password)
     }
     
     if (strlen(ssid) > 32 || strlen(password) > 64) {
-        ESP_LOGE(TAG, "SSID or password too long");
+        ESP_LOGE(TAG, "SSID or password too long (ssid_len=%zu, max=32; pass_len=%zu, max=64)",
+                 strlen(ssid), strlen(password));
         return ESP_ERR_INVALID_ARG;
     }
     
@@ -174,7 +176,8 @@ esp_err_t wifi_manager_set_credentials(const char *ssid, const char *password)
     
     esp_err_t ret = config_set_wifi(&config);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to store WiFi config in NVS: %s", esp_err_to_name(ret));
+        ESP_LOGE(TAG, "Failed to store WiFi config in NVS: %s (SSID=%s)",
+                 esp_err_to_name(ret), ssid);
         return ret;
     }
     
@@ -234,7 +237,7 @@ esp_err_t wifi_manager_get_credentials(char *ssid, size_t ssid_len,
 esp_err_t wifi_manager_connect(void)
 {
     if (!s_initialized) {
-        ESP_LOGE(TAG, "WiFi manager not initialized");
+        ESP_LOGE(TAG, "WiFi manager not initialized (state=NOT_INIT)");
         return ESP_ERR_INVALID_STATE;
     }
     
@@ -243,17 +246,17 @@ esp_err_t wifi_manager_connect(void)
         wifi_manager_status_t status = s_wifi_state.status;
         xSemaphoreGive(s_state_mutex);
         
-        if (status == WIFI_MGR_CONNECTED || status == WIFI_MGR_CONNECTING) {
+        if ((int)status == (int)WIFI_MGR_CONNECTED || (int)status == (int)WIFI_MGR_CONNECTING) {
             ESP_LOGW(TAG, "WiFi already %s",
-                     status == WIFI_MGR_CONNECTED ? "connected" : "connecting");
+                     (int)status == (int)WIFI_MGR_CONNECTED ? "connected" : "connecting");
             return ESP_ERR_INVALID_STATE;
         }
     }
     
     // Check if credentials are set
     if (strlen(s_wifi_config.ssid) == 0) {
-        ESP_LOGE(TAG, "WiFi credentials not configured");
-        return ESP_ERR_NVS_NOT_FOUND;
+        ESP_LOGE(TAG, "WiFi credentials not configured (SSID=empty)");
+        return ESP_ERR_NOT_FOUND;
     }
     
     ESP_LOGI(TAG, "Connecting to WiFi SSID: %s", s_wifi_config.ssid);
@@ -270,7 +273,8 @@ esp_err_t wifi_manager_connect(void)
     
     esp_err_t ret = esp_wifi_set_config(WIFI_IF_STA, &wifi_config);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to set WiFi config: %s", esp_err_to_name(ret));
+        ESP_LOGE(TAG, "Failed to set WiFi config: %s (SSID=%s)",
+                 esp_err_to_name(ret), s_wifi_config.ssid);
         return ret;
     }
     
@@ -284,7 +288,8 @@ esp_err_t wifi_manager_connect(void)
     // Start connection
     ret = esp_wifi_connect();
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to connect to WiFi: %s", esp_err_to_name(ret));
+        ESP_LOGE(TAG, "Failed to connect to WiFi: %s (SSID=%s, retry_count=0)",
+                 esp_err_to_name(ret), s_wifi_config.ssid);
         
         // Revert state on failure
         if (xSemaphoreTake(s_state_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
@@ -350,7 +355,7 @@ wifi_manager_state_t wifi_manager_get_state(void)
 const char* wifi_manager_get_ip_address(void)
 {
     if (xSemaphoreTake(s_state_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
-        if (s_wifi_state.status == WIFI_MGR_CONNECTED && strlen(s_ip_address) > 0) {
+        if ((int)s_wifi_state.status == (int)WIFI_MGR_CONNECTED && strlen(s_ip_address) > 0) {
             xSemaphoreGive(s_state_mutex);
             return s_ip_address;
         }
@@ -408,8 +413,8 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
             vTaskDelay(pdMS_TO_TICKS(delay_ms));
             esp_wifi_connect();
         } else {
-            ESP_LOGE(TAG, "WiFi connection failed after %d retries",
-                     s_wifi_config.max_retry);
+            ESP_LOGE(TAG, "WiFi connection failed after %d retries (SSID=%s, retry_count=%d)",
+                     s_wifi_config.max_retry, s_wifi_config.ssid, s_wifi_state.retry_count);
             
             // Post FAILED event (FR-025)
             esp_event_post(WIFI_MGR_EVENT, WIFI_MGR_FAILED, NULL, 0, portMAX_DELAY);

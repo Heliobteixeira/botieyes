@@ -11,7 +11,59 @@
 #include <unistd.h>
 #include <lwip/inet.h>
 #include <lwip/sockets.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
+#include <esp_log.h>
 #endif
+
+// ============================================================================
+// Network Command Queue Integration (FR-006, FR-013) - T041
+// ============================================================================
+
+#if defined(ESP_PLATFORM)
+
+// Network command types (must match main.cpp)
+typedef enum {
+    CMD_SET_EMOTION,
+    CMD_SET_POSITION,
+    CMD_SET_PRESET,
+    CMD_IDLE_MODE,
+    CMD_PING,
+    CMD_RESET
+} network_cmd_type_t;
+
+// Network command structure (must match main.cpp)
+typedef struct {
+    network_cmd_type_t type;
+    uint16_t seq;
+    union {
+        struct {
+            int16_t valence_milli;
+            int16_t arousal_milli;
+            uint16_t duration_ms;
+        } emotion;
+        struct {
+            int16_t h_percent;
+            int16_t v_percent;
+            uint16_t duration_ms;
+        } position;
+        struct {
+            uint8_t preset_id;
+            uint8_t intensity;
+        } preset;
+        struct {
+            bool enabled;
+        } idle;
+        uint8_t raw[56];
+    } payload;
+} network_cmd_t;
+
+// External queue handle (defined in main.cpp)
+extern QueueHandle_t g_network_cmd_queue;
+
+static const char *TAG_NET = "NET:UDP";
+
+#endif // ESP_PLATFORM
 
 namespace BotiEyes {
 namespace net {
@@ -249,6 +301,76 @@ void BotiEyesServer::applyPending() {
 
     PendingTargets& p = session_.pending();
 
+#if defined(ESP_PLATFORM)
+    // ========================================================================
+    // Queue-Based Command Dispatch (FR-006, FR-013, FR-016) - T041, T043
+    // ========================================================================
+    
+    // Send commands to queue for processing by app_task
+    // Use 100ms timeout to avoid blocking (FR-016)
+    const TickType_t queue_timeout = pdMS_TO_TICKS(100);
+
+    if (p.hasEmotion) {
+        network_cmd_t cmd = {};
+        cmd.type = CMD_SET_EMOTION;
+        cmd.seq = 0;  // Seq not used for queued commands
+        cmd.payload.emotion.valence_milli = p.valenceMilli;
+        cmd.payload.emotion.arousal_milli = p.arousalMilli;
+        cmd.payload.emotion.duration_ms = p.emotionDurationMs;
+        
+        if (xQueueSend(g_network_cmd_queue, &cmd, queue_timeout) != pdTRUE) {
+            // Queue full - drop packet and log warning (FR-016, FR-017, T043)
+            ESP_LOGW(TAG_NET, "Command queue full, dropping SET_EMOTION command");
+        }
+    }
+
+    if (p.hasGaze) {
+        network_cmd_t cmd = {};
+        cmd.type = CMD_SET_POSITION;
+        cmd.seq = 0;
+        cmd.payload.position.h_percent = p.gazeH;
+        cmd.payload.position.v_percent = p.gazeV;
+        cmd.payload.position.duration_ms = p.gazeDurationMs;
+        
+        if (xQueueSend(g_network_cmd_queue, &cmd, queue_timeout) != pdTRUE) {
+            ESP_LOGW(TAG_NET, "Command queue full, dropping SET_POSITION command");
+        }
+    }
+
+    if (p.actions & ACTION_PRESET) {
+        network_cmd_t cmd = {};
+        cmd.type = CMD_SET_PRESET;
+        cmd.seq = 0;
+        cmd.payload.preset.preset_id = p.presetId;
+        cmd.payload.preset.intensity = p.presetIntensityPct;
+        
+        if (xQueueSend(g_network_cmd_queue, &cmd, queue_timeout) != pdTRUE) {
+            ESP_LOGW(TAG_NET, "Command queue full, dropping SET_PRESET command");
+        }
+    }
+
+    if (p.actions & ACTION_IDLE) {
+        network_cmd_t cmd = {};
+        cmd.type = CMD_IDLE_MODE;
+        cmd.seq = 0;
+        cmd.payload.idle.enabled = (p.idleEnable != 0);
+        
+        if (xQueueSend(g_network_cmd_queue, &cmd, queue_timeout) != pdTRUE) {
+            ESP_LOGW(TAG_NET, "Command queue full, dropping IDLE_MODE command");
+        }
+    }
+
+    // Note: Blink and wink actions are not queued - they're applied directly
+    // because they're time-sensitive and don't affect state machine
+    if (p.actions & ACTION_BLINK) {
+        eyes_.blink(p.blinkDurationMs);
+    }
+    if (p.actions & ACTION_WINK) {
+        eyes_.wink(p.winkEye == 1 ? RIGHT : LEFT, p.winkDurationMs);
+    }
+
+#else
+    // Non-ESP_PLATFORM builds: apply directly (legacy behavior)
     if (p.hasEmotion) {
         eyes_.setEmotion(p.valenceMilli / (float)VALENCE_SCALE,
                          p.arousalMilli / (float)AROUSAL_SCALE,
@@ -269,6 +391,7 @@ void BotiEyesServer::applyPending() {
     if (p.actions & ACTION_WINK) {
         eyes_.wink(p.winkEye == 1 ? RIGHT : LEFT, p.winkDurationMs);
     }
+#endif
 
     session_.clearPending();
 }

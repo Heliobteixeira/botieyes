@@ -30,7 +30,8 @@ esp_err_t app_state_init(void)
     
     s_state_mutex = xSemaphoreCreateMutex();
     if (s_state_mutex == NULL) {
-        ESP_LOGE(TAG, "Failed to create state mutex");
+        ESP_LOGE(TAG, "Failed to create state mutex (error=ESP_ERR_NO_MEM, current_state=%d)",
+                 s_state_info.current);
         return ESP_ERR_NO_MEM;
     }
     
@@ -86,14 +87,15 @@ esp_err_t app_state_transition(app_state_t new_state, const char *reason)
     }
     
     if (xSemaphoreTake(s_state_mutex, pdMS_TO_TICKS(100)) != pdTRUE) {
-        ESP_LOGE(TAG, "Failed to acquire state mutex for transition");
+        ESP_LOGE(TAG, "Failed to acquire state mutex for transition (timeout, current_state=%d, target_state=%d)",
+                 s_state_info.current, new_state);
         return ESP_ERR_TIMEOUT;
     }
     
     // Validate transition (FR-027, T062)
     if (!is_valid_transition(s_state_info.current, new_state)) {
-        ESP_LOGE(TAG, "Invalid state transition: %d -> %d",
-                 s_state_info.current, new_state);
+        ESP_LOGE(TAG, "Invalid state transition: previous_state=%d, target_state=%d, reason=%s",
+                 s_state_info.current, new_state, reason ? reason : "none");
         xSemaphoreGive(s_state_mutex);
         return ESP_ERR_INVALID_STATE;
     }

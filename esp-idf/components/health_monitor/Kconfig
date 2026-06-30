@@ -1,0 +1,26 @@
+# Health Monitor Configuration
+
+menu "Health Monitor Configuration"
+
+    config HEALTH_MONITOR_WATCHDOG_TIMEOUT_S
+        int "Task watchdog timeout (seconds)"
+        default 30
+        range 5 300
+        help
+            Timeout for task watchdog. Tasks must feed watchdog within this period.
+            
+    config HEALTH_MONITOR_BOOT_LOOP_THRESHOLD
+        int "Boot loop detection threshold"
+        default 3
+        range 2 10
+        help
+            Number of boots within 60 seconds to trigger safe mode.
+            
+    config HEALTH_MONITOR_STACK_WATERMARK_WARNING
+        int "Stack watermark warning threshold (bytes)"
+        default 512
+        range 128 2048
+        help
+            Log warning when task stack high watermark falls below this value.
+
+endmenu

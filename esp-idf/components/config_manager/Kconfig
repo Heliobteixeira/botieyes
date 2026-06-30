@@ -1,0 +1,23 @@
+# Configuration Manager Settings
+
+menu "Configuration Manager"
+
+    config CONFIG_MGR_NVS_NAMESPACE_WIFI
+        string "NVS namespace for WiFi configuration"
+        default "botieyes_wifi"
+        help
+            NVS namespace for storing WiFi credentials and settings.
+            
+    config CONFIG_MGR_NVS_NAMESPACE_APP
+        string "NVS namespace for application configuration"
+        default "botieyes_app"
+        help
+            NVS namespace for application-specific settings (brightness, timeouts).
+            
+    config CONFIG_MGR_NVS_NAMESPACE_SYS
+        string "NVS namespace for system configuration"
+        default "botieyes_sys"
+        help
+            NVS namespace for system settings (crash logs, boot count).
+
+endmenu

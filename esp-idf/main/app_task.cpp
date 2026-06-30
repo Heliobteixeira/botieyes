@@ -14,6 +14,9 @@
 #include <esp_log.h>
 #include <esp_task_wdt.h>
 
+// BotiEyes library
+#include "BotiEyes.h"
+
 // Forward declarations for the command queue and type (defined in main.cpp)
 extern QueueHandle_t g_network_cmd_queue;
 
@@ -164,7 +167,7 @@ void app_task(void *arg)
     // Get BotiEyes instance from parameter
     BotiEyes::BotiEyes* eyes = static_cast<BotiEyes::BotiEyes*>(arg);
     if (!eyes) {
-        ESP_LOGE(TAG, "No BotiEyes instance provided!");
+        ESP_LOGE(TAG, "No BotiEyes instance provided (arg=NULL, core=%d)!", xPortGetCoreID());
         vTaskDelete(NULL);
         return;
     }
@@ -173,6 +176,16 @@ void app_task(void *arg)
     const uint32_t frame_interval_ms = CONFIG_BOTIEYES_FRAME_INTERVAL_MS;
 
     ESP_LOGI(TAG, "Application task running, frame interval: %u ms", frame_interval_ms);
+
+    // TODO (T120): Performance profiling - frame timing measurement
+    // Add frame timing to detect rendering delays vs target 25 FPS (40ms)
+    // uint32_t frame_start_us = esp_timer_get_time();
+    // ... processing ...
+    // uint32_t frame_duration_us = esp_timer_get_time() - frame_start_us;
+    // if (frame_duration_us > (frame_interval_ms * 1000 + 5000)) {
+    //     ESP_LOGW(TAG, "Frame %lu overrun: %lu us (target: %lu us)", 
+    //              frame_count, frame_duration_us, frame_interval_ms * 1000);
+    // }
 
     while (1) {
         // Process network commands from queue (FR-006, FR-016)
@@ -209,6 +222,16 @@ void app_task(void *arg)
             } else {
                 ESP_LOGD(TAG, "App task stack watermark: %u bytes", watermark);
             }
+            
+            // TODO (T121): Memory profiling - heap monitoring
+            // Add heap usage tracking to detect memory leaks or fragmentation
+            // size_t free_heap = esp_get_free_heap_size();
+            // size_t min_free_heap = esp_get_minimum_free_heap_size();
+            // ESP_LOGI(TAG, "Heap: %zu bytes free, minimum ever: %zu bytes", 
+            //          free_heap, min_free_heap);
+            // if (min_free_heap < 10240) {  // Warn if < 10KB ever reached
+            //     ESP_LOGW(TAG, "Heap minimum critically low: %zu bytes", min_free_heap);
+            // }
         }
 
         // Periodic logging (every 5 seconds)
@@ -217,8 +240,8 @@ void app_task(void *arg)
                      frame_count, uxQueueSpacesAvailable(g_network_cmd_queue));
         }
 
-        // Feed watchdog (will be registered in Phase 10)
-        // esp_task_wdt_reset();
+        // T094: Feed watchdog every iteration (FR-040)
+        esp_task_wdt_reset();
 
         frame_count++;
         

@@ -352,14 +352,57 @@ I (3520) SVC:STATE: CONNECTING → CONNECTED
 
 ### Runtime Log Level Control
 
-**Enable verbose WiFi logs**:
+Change log levels at runtime without recompiling:
+
 ```c
+// Set specific component to DEBUG
+esp_log_level_set("SVC:WIFI:MGR", ESP_LOG_DEBUG);
+
+// Set all WiFi components to DEBUG using wildcard
 esp_log_level_set("SVC:WIFI:*", ESP_LOG_DEBUG);
+
+// Set all services to INFO
+esp_log_level_set("SVC:*", ESP_LOG_INFO);
+
+// Silence verbose HAL logs
+esp_log_level_set("HAL:*", ESP_LOG_WARN);
+
+// Set application layer to VERBOSE for detailed debugging
+esp_log_level_set("APP:*", ESP_LOG_VERBOSE);
+
+// Set network layer to DEBUG
+esp_log_level_set("NET:*", ESP_LOG_DEBUG);
 ```
 
-**Silence HAL logs**:
+**Available log levels** (from most to least verbose):
+- `ESP_LOG_VERBOSE` - Detailed trace information
+- `ESP_LOG_DEBUG` - Debug messages
+- `ESP_LOG_INFO` - Informational messages (default)
+- `ESP_LOG_WARN` - Warnings
+- `ESP_LOG_ERROR` - Errors only
+- `ESP_LOG_NONE` - Disable all logs
+
+**Common debugging scenarios**:
+
 ```c
-esp_log_level_set("HAL:*", ESP_LOG_WARN);
+// Debug WiFi connection issues
+esp_log_level_set("SVC:WIFI:*", ESP_LOG_DEBUG);
+esp_log_level_set("HAL:*", ESP_LOG_INFO);
+
+// Debug network command processing
+esp_log_level_set("NET:*", ESP_LOG_DEBUG);
+esp_log_level_set("APP:TASK", ESP_LOG_DEBUG);
+
+// Debug state machine transitions
+esp_log_level_set("SVC:STATE", ESP_LOG_DEBUG);
+
+// Debug hardware initialization
+esp_log_level_set("HAL:*", ESP_LOG_DEBUG);
+esp_log_level_set("APP:INIT", ESP_LOG_DEBUG);
+
+// Reduce noise from verbose components
+esp_log_level_set("HAL:DISPLAY", ESP_LOG_WARN);
+esp_log_level_set("NET:UDP", ESP_LOG_INFO);
 ```
 
 ### Stack Monitoring

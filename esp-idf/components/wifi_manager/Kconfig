@@ -1,0 +1,25 @@
+# WiFi Manager Configuration
+
+menu "WiFi Manager Configuration"
+
+    config WIFI_MANAGER_MAX_RETRY
+        int "Maximum WiFi connection retry attempts"
+        default 5
+        range 1 20
+        help
+            Maximum number of times to retry WiFi connection before giving up.
+            
+    config WIFI_MANAGER_RETRY_DELAY_MS
+        int "Initial retry delay (milliseconds)"
+        default 1000
+        range 100 10000
+        help
+            Initial delay between retry attempts. Uses exponential backoff.
+            
+    config WIFI_MANAGER_AUTO_RECONNECT
+        bool "Enable automatic reconnection"
+        default y
+        help
+            Automatically retry connection on disconnect.
+
+endmenu

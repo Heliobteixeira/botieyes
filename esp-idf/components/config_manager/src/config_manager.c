@@ -65,7 +65,7 @@ esp_err_t config_get_wifi(config_wifi_t *config)
     err = nvs_get_str(wifi_nvs_handle, "ssid", config->ssid, &len);
     if (err == ESP_ERR_NVS_NOT_FOUND) {
         // No stored SSID - return defaults from Kconfig
-        strncpy(config->ssid, CONFIG_WIFI_SSID, sizeof(config->ssid) - 1);
+        strncpy(config->ssid, CONFIG_BOTIEYES_WIFI_SSID, sizeof(config->ssid) - 1);
         config->ssid[sizeof(config->ssid) - 1] = '\0';
     } else if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to read WiFi SSID: %s", esp_err_to_name(err));
@@ -77,7 +77,7 @@ esp_err_t config_get_wifi(config_wifi_t *config)
     err = nvs_get_str(wifi_nvs_handle, "password", config->password, &len);
     if (err == ESP_ERR_NVS_NOT_FOUND) {
         // No stored password - use Kconfig default
-        strncpy(config->password, CONFIG_WIFI_PASSWORD, sizeof(config->password) - 1);
+        strncpy(config->password, CONFIG_BOTIEYES_WIFI_PASSWORD, sizeof(config->password) - 1);
         config->password[sizeof(config->password) - 1] = '\0';
     } else if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to read WiFi password: %s", esp_err_to_name(err));
@@ -283,8 +283,8 @@ esp_err_t config_get_crash_log(config_crash_log_t *log)
         return ESP_ERR_INVALID_SIZE;
     }
     
-    ESP_LOGI(TAG, "Crash log loaded: timestamp=%lu, reset_reason=%d",
-             log->timestamp, log->reset_reason);
+    ESP_LOGI(TAG, "Crash log loaded: timestamp=%lu, reset_reason=%d, desc=%s",
+             log->timestamp, log->reason, log->description);
     
     return ESP_OK;
 }
@@ -311,8 +311,8 @@ esp_err_t config_set_crash_log(const config_crash_log_t *log)
         return err;
     }
     
-    ESP_LOGI(TAG, "Crash log saved: timestamp=%lu, reset_reason=%d",
-             log->timestamp, log->reset_reason);
+    ESP_LOGI(TAG, "Crash log saved: timestamp=%lu, reset_reason=%d, desc=%s",
+             log->timestamp, log->reason, log->description);
     
     return ESP_OK;
 }

@@ -174,6 +174,10 @@
 - [X] T058 [US2] Integrate wifi_manager in main/main.cpp: Call wifi_manager_init(), wifi_manager_connect() after component init
 - [X] T059 [US2] Add WiFi event handlers in main/main.cpp: Register handlers for WIFI_MGR_CONNECTED, WIFI_MGR_FAILED to update status LED and trigger state transitions
 - [ ] T060 [US2] Update main/Kconfig.projbuild: Move WiFi SSID/password to wifi_manager component Kconfig for proper organization
+  **Status**: DEFERRED - Low priority documentation improvement
+  **Reason**: Current Kconfig organization works correctly, this is organizational polish
+  **Effort**: ~1 hour
+  **Priority**: Low - can be done in future documentation pass
 
 **Checkpoint**: WiFi connectivity managed by dedicated service. Auto-reconnection works. Status LED reflects connection state. WiFi events drive application state transitions.
 
@@ -226,6 +230,10 @@
 - [X] T078 [US5] Integrate config_manager in main/main.cpp: Call config_manager_init() after NVS flash init
 - [X] T079 [US5] Update wifi_manager to use config_manager for credential storage instead of direct NVS access
 - [ ] T080 [US5] Document Kconfig vs NVS split in main/Kconfig.projbuild comments: Build-time (board, features) vs runtime (WiFi, app settings) (FR-018, FR-019)
+  **Status**: DEFERRED - Low priority documentation improvement
+  **Reason**: Developers understand the split from code context, this is inline documentation polish
+  **Effort**: ~1 hour
+  **Priority**: Low - nice-to-have for developer onboarding
 
 **Checkpoint**: Configuration management abstraction operational. WiFi credentials persist across reboots. Factory reset functionality available. Config defaults loaded from Kconfig when NVS empty.
 

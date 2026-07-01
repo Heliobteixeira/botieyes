@@ -84,7 +84,7 @@ esp-idf/build/
 esp-idf/sdkconfig
 esp-idf/sdkconfig.old
 esp-idf/managed_components/
-esp-idf/dependencies.lock
+# esp-idf/dependencies.lock  # Keep tracked for reproducible builds (like package-lock.json)
 esp-idf/.config/
 *.bin
 *.elf

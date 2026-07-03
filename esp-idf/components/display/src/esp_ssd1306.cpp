@@ -43,7 +43,7 @@ namespace BotiEyes
         bool ESP_SSD1306::beginSpi(int mosi_pin, int sclk_pin, int cs_pin, int dc_pin, int rst_pin)
         {
             ESP_LOGI(TAG, "Initializing SSD1306 via SPI (component-backed)");
-            spi_clock_speed(CONFIG_BOTIEYES_SPI_CLOCK_SPEED_HZ);
+            spi_clock_speed(CONFIG_BOTIEYES_OLED_SPI_FREQ);
             spi_master_init(&_dev, mosi_pin, sclk_pin, cs_pin, dc_pin, rst_pin);
             esp_err_t err = ssd1306_init(&_dev, WIDTH, HEIGHT);
             if (err != ESP_OK)

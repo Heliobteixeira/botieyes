@@ -24,6 +24,7 @@ extern bool g_safe_mode;
  * @brief Initialize health monitor (T081)
  * 
  * Configures task watchdog with 30-second timeout (FR-039)
+ * Handles ESP-IDF v6.0+ auto-initialization gracefully
  */
 esp_err_t health_monitor_init(void)
 {
@@ -37,12 +38,25 @@ esp_err_t health_monitor_init(void)
     };
     
     esp_err_t ret = esp_task_wdt_init(&wdt_config);
-    if (ret != ESP_OK) {
+    if (ret == ESP_ERR_INVALID_STATE) {
+        // ESP-IDF v6.0+ auto-initializes TWDT - this is expected
+        ESP_LOGI(TAG, "Task watchdog already initialized by ESP-IDF");
+        
+        // Reconfigure with our settings if needed
+        ret = esp_task_wdt_reconfigure(&wdt_config);
+        if (ret != ESP_OK && ret != ESP_ERR_NOT_SUPPORTED) {
+            ESP_LOGW(TAG, "Could not reconfigure watchdog: %s (using existing config)", 
+                     esp_err_to_name(ret));
+            // Non-fatal - use existing watchdog configuration
+        } else {
+            ESP_LOGI(TAG, "Task watchdog reconfigured: timeout=30s");
+        }
+    } else if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize task watchdog: %s", esp_err_to_name(ret));
         return ESP_FAIL;
+    } else {
+        ESP_LOGI(TAG, "Task watchdog configured: timeout=30s");
     }
-    
-    ESP_LOGI(TAG, "Task watchdog configured: timeout=30s");
     
     // T081: Create task registry for monitoring
     ret = task_registry_init();

@@ -402,6 +402,9 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
             xSemaphoreGive(s_state_mutex);
         }
         
+        // Post DISCONNECTED event first (FR-025)
+        esp_event_post(WIFI_MGR_EVENT, WIFI_MGR_EVENT_DISCONNECTED, NULL, 0, portMAX_DELAY);
+        
         if (should_retry) {
             uint32_t delay_ms = s_wifi_config.retry_delay_ms *
                                (1 << (s_wifi_state.retry_count - 1)); // Exponential backoff
@@ -416,12 +419,9 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
             ESP_LOGE(TAG, "WiFi connection failed after %d retries (SSID=%s, retry_count=%d)",
                      s_wifi_config.max_retry, s_wifi_config.ssid, s_wifi_state.retry_count);
             
-            // Post FAILED event (FR-025)
-            esp_event_post(WIFI_MGR_EVENT, WIFI_MGR_FAILED, NULL, 0, portMAX_DELAY);
+            // Post FAILED event only if truly exhausted (FR-025)
+            esp_event_post(WIFI_MGR_EVENT, WIFI_MGR_EVENT_FAILED, NULL, 0, portMAX_DELAY);
         }
-        
-        // Post DISCONNECTED event (FR-025)
-        esp_event_post(WIFI_MGR_EVENT, WIFI_MGR_DISCONNECTED, NULL, 0, portMAX_DELAY);
     }
 }
 
@@ -461,7 +461,7 @@ static void ip_event_handler(void *arg, esp_event_base_t event_base,
         s_wifi_config.auto_reconnect = true;
         
         // Post CONNECTED event with IP info (FR-025)
-        esp_event_post(WIFI_MGR_EVENT, WIFI_MGR_CONNECTED,
+        esp_event_post(WIFI_MGR_EVENT, WIFI_MGR_EVENT_CONNECTED,
                       &event->ip_info, sizeof(esp_netif_ip_info_t),
                       portMAX_DELAY);
     }

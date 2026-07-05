@@ -1,0 +1,13 @@
+# Application State Machine Configuration
+
+menu "State Machine Configuration"
+
+    config APP_STATE_MUTEX_TIMEOUT_MS
+        int "State mutex timeout (milliseconds)"
+        default 100
+        range 10 1000
+        help
+            Timeout for acquiring state machine mutex. Should be kept low
+            to prevent blocking.
+
+endmenu

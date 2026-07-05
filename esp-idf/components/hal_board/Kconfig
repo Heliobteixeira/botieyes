@@ -1,0 +1,134 @@
+# Hardware Abstraction Layer Configuration
+
+menu "Board Configuration"
+
+    choice BOTIEYES_BOARD_SELECT
+        prompt "Select board variant"
+        default BOTIEYES_BOARD_TTGO_LORA32
+        help
+            Select the target board variant. This determines pin mappings,
+            display interface (I2C/SPI), and LED type.
+
+        config BOTIEYES_BOARD_TTGO_LORA32
+            bool "TTGO LoRa32 (ESP32 + I2C SSD1306)"
+            
+        config BOTIEYES_BOARD_ESP32S3_SPI
+            bool "ESP32-S3 with SPI SSD1306"
+            
+    endchoice
+
+endmenu
+
+menu "Display Configuration"
+
+    choice BOTIEYES_OLED_PROTOCOL
+        prompt "OLED communication protocol"
+        default BOTIEYES_OLED_PROTOCOL_I2C if BOTIEYES_BOARD_TTGO_LORA32
+        default BOTIEYES_OLED_PROTOCOL_SPI if BOTIEYES_BOARD_ESP32S3_SPI
+        help
+            Select I2C or SPI for OLED communication.
+
+        config BOTIEYES_OLED_PROTOCOL_I2C
+            bool "I2C"
+            
+        config BOTIEYES_OLED_PROTOCOL_SPI
+            bool "SPI"
+            
+    endchoice
+    
+    # I2C Configuration
+    if BOTIEYES_OLED_PROTOCOL_I2C
+        config BOTIEYES_OLED_I2C_SDA
+            int "I2C SDA GPIO"
+            default 4 if BOTIEYES_BOARD_TTGO_LORA32
+            default 21
+            
+        config BOTIEYES_OLED_I2C_SCL
+            int "I2C SCL GPIO"
+            default 15 if BOTIEYES_BOARD_TTGO_LORA32
+            default 22
+            
+        config BOTIEYES_OLED_I2C_RST
+            int "I2C RST GPIO"
+            default 16 if BOTIEYES_BOARD_TTGO_LORA32
+            default -1
+            
+        config BOTIEYES_OLED_I2C_FREQ
+            int "I2C frequency (Hz)"
+            default 400000
+            range 100000 1000000
+            
+        config BOTIEYES_OLED_I2C_ADDRESS
+            hex "I2C address"
+            default 0x3C
+            range 0x3C 0x3D
+    endif
+    
+    # SPI Configuration
+    if BOTIEYES_OLED_PROTOCOL_SPI
+        config BOTIEYES_OLED_SPI_MOSI
+            int "SPI MOSI GPIO"
+            default 11 if BOTIEYES_BOARD_ESP32S3_SPI
+            default 23
+            
+        config BOTIEYES_OLED_SPI_SCK
+            int "SPI SCK GPIO"
+            default 12 if BOTIEYES_BOARD_ESP32S3_SPI
+            default 18
+            
+        config BOTIEYES_OLED_SPI_CS
+            int "SPI CS GPIO"
+            default 10 if BOTIEYES_BOARD_ESP32S3_SPI
+            default 5
+            
+        config BOTIEYES_OLED_SPI_DC
+            int "SPI DC GPIO"
+            default 13 if BOTIEYES_BOARD_ESP32S3_SPI
+            default 16
+            
+        config BOTIEYES_OLED_SPI_RST
+            int "SPI RST GPIO"
+            default 14 if BOTIEYES_BOARD_ESP32S3_SPI
+            default 17
+            
+        config BOTIEYES_OLED_SPI_FREQ
+            int "SPI frequency (Hz)"
+            default 10000000
+            range 1000000 80000000
+    endif
+
+endmenu
+
+menu "LED Configuration"
+
+    choice BOTIEYES_LED_TYPE
+        prompt "Status LED type"
+        default BOTIEYES_LED_TYPE_GPIO if BOTIEYES_BOARD_TTGO_LORA32
+        default BOTIEYES_LED_TYPE_WS2812 if BOTIEYES_BOARD_ESP32S3_SPI
+        help
+            Select LED type: simple GPIO or addressable WS2812.
+
+        config BOTIEYES_LED_TYPE_NONE
+            bool "None (no LED)"
+            
+        config BOTIEYES_LED_TYPE_GPIO
+            bool "GPIO LED"
+            
+        config BOTIEYES_LED_TYPE_WS2812
+            bool "WS2812 addressable LED"
+            
+    endchoice
+    
+    config BOTIEYES_LED_GPIO_PIN
+        int "LED GPIO pin"
+        default 2 if BOTIEYES_BOARD_TTGO_LORA32
+        default -1
+        depends on BOTIEYES_LED_TYPE_GPIO
+        
+    config BOTIEYES_LED_WS2812_GPIO
+        int "WS2812 GPIO pin"
+        default 38 if BOTIEYES_BOARD_ESP32S3_SPI
+        default 2
+        depends on BOTIEYES_LED_TYPE_WS2812
+
+endmenu

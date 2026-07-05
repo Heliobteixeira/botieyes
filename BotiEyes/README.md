@@ -193,6 +193,18 @@ Features:
 - JSON state export for debugging
 - Matches embedded rendering exactly
 
+## ESP-IDF Firmware Architecture
+
+The BotiEyes firmware has been refactored to follow industrial ESP-IDF patterns:
+- **Modular component architecture**: Independent, reusable components with clear interfaces
+- **Event-driven inter-task communication**: ESP event loops and FreeRTOS queues for non-blocking coordination
+- **Hardware abstraction layer**: Multi-board support (TTGO LoRa32, ESP32-S3) with compile-time selection
+- **Comprehensive health monitoring**: Watchdog protection, crash recovery, and boot loop detection
+
+See [`esp-idf/README.md`](../esp-idf/README.md) and 
+[`specs/004-industrial-firmware-architecture/quickstart.md`](../specs/004-industrial-firmware-architecture/quickstart.md) 
+for developer documentation.
+
 ## API Reference
 
 See [`docs/API.md`](docs/API.md) for complete API documentation.

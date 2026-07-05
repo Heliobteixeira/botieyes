@@ -1,7 +1,7 @@
 """Interactive CLI for driving a BotiEyes ESP32 device over the network.
 
 Usage:
-    python cli.py --host 192.168.1.42 [--port 4210]
+    python3 cli.py --host 192.168.1.139 [--port 4210]
 
 Then type commands at the prompt (see `help`).
 """

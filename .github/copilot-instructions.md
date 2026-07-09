@@ -147,5 +147,5 @@ Before accepting AI-generated ESP-IDF code, verify:
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-specs/004-industrial-firmware-architecture/plan.md
+specs/005-st7789-display-support/plan.md
 <!-- SPECKIT END -->

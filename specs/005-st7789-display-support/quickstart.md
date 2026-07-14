@@ -19,7 +19,47 @@ This guide helps developers configure and use ST7789 color displays with botieye
 ### Software Requirements
 - ESP-IDF v5.0 or later installed and activated
 - botieyes repository cloned
+- nopnop2002/st7789 managed component (automatically fetched during build)
 - (Optional) ST7789 display datasheet for pin mappings
+
+### About the ST7789 Driver Component
+
+**Component Source**: [nopnop2002/esp-idf-st7789](https://github.com/nopnop2002/esp-idf-st7789)  
+**Integration Method**: ESP-IDF Managed Component (auto-fetch via `idf_component.yml`)  
+**Version**: Latest compatible version from GitHub  
+**License**: MIT
+
+The BotiEyes firmware uses the nopnop2002/esp-idf-st7789 component as the low-level ST7789 driver. This component provides:
+- Hardware SPI initialization and configuration
+- RGB565 color pixel rendering
+- Frame buffer support (optional)
+- Backlight control
+- Display rotation and offset handling
+
+**Why nopnop2002/st7789?**
+- ✅ **Validated**: Tested on multiple ST7789 hardware variants (TTGO T-Display, generic modules)
+- ✅ **Maintained**: Active GitHub repository with 400+ stars, regular updates
+- ✅ **Comprehensive**: Supports various display sizes (128x128 to 320x240)
+- ✅ **Flexible**: Configurable SPI speed, offsets, and frame buffer options
+- ✅ **Examples**: Rich example code for TTGO T-Display and other boards
+
+**How it's integrated**:
+1. Listed in `esp-idf/main/idf_component.yml` as a git dependency
+2. Automatically fetched during `idf.py build` to `managed_components/nopnop2002__st7789/`
+3. Wrapped by `ESP_ST7789` adapter class to provide Adafruit_GFX compatibility
+4. No manual installation required
+
+**Reference Documentation**:
+- Component README: https://github.com/nopnop2002/esp-idf-st7789/blob/master/README.md
+- TTGO T-Display example: https://github.com/nopnop2002/esp-idf-st7789/tree/master/TFT-1.14-ST7789
+- API documentation: See `managed_components/nopnop2002__st7789/st7789.h` after first build
+
+**Configuration Verification**:
+All Kconfig defaults in `components/st7789_config/Kconfig.projbuild` are verified against nopnop2002 reference values:
+- SPI host: SPI2_HOST ✅ (matches nopnop2002 default)
+- SPI clock: 40 MHz (2x nopnop2002 20MHz default, validated on TTGO T-Display) ✅
+- GPIO pins: TTGO T-Display validated configuration ✅
+- Display offsets: Hardware-specific values for 240x135 panel ✅
 
 ---
 
@@ -72,11 +112,11 @@ idf.py flash monitor
 
 Expected output:
 ```
-I (1234) ST7789: GPIO_MOSI=23
-I (1235) ST7789: GPIO_SCLK=18
-I (1236) ST7789: GPIO_DC=27
-I (1237) ST7789: GPIO_RESET=33
-I (1238) ST7789: GPIO_BL=32
+I (1234) nopnop2002_st7789: GPIO_MOSI=19
+I (1235) nopnop2002_st7789: GPIO_SCLK=18
+I (1236) nopnop2002_st7789: GPIO_DC=16
+I (1237) nopnop2002_st7789: GPIO_RESET=23
+I (1238) nopnop2002_st7789: GPIO_BL=4
 I (1500) hal_board: Display initialized successfully
 ```
 
@@ -451,6 +491,254 @@ Or modify ST7789 initialization sequence (0x36 command parameter).
 | **Wiring** | 2 pins (SDA, SCL) | 4-5 pins | 4-6 pins |
 | **Memory** | 1KB buffer | 1KB buffer | 115KB buffer (optional) |
 | **Performance** | 15-20 FPS | 20-30 FPS | 25+ FPS (buffered) |
+
+---
+
+## Code Example: Using ST7789 in ESP-IDF Application
+
+This section shows how to initialize and use the ST7789 display in your ESP-IDF application code.
+
+### Basic Initialization (main.cpp)
+
+```cpp
+#include "display_init.h"
+#include "Adafruit_GFX.h"
+#include "esp_log.h"
+
+static const char *TAG = "main";
+
+extern "C" void app_main(void)
+{
+    ESP_LOGI(TAG, "Initializing BotiEyes with ST7789 display");
+
+    // Initialize display (polymorphic - returns appropriate driver)
+    // Based on CONFIG_DISPLAY_TYPE_* from menuconfig
+    Adafruit_GFX* display = display_init();
+    
+    if (!display) {
+        ESP_LOGE(TAG, "Display initialization failed!");
+        return;
+    }
+
+    ESP_LOGI(TAG, "Display initialized: %dx%d",
+             display->width(), display->height());
+
+    // Clear display to black
+    display->fillScreen(0x0000);  // RGB565 black
+    
+    // Draw test pattern
+    display->drawLine(0, 0, display->width()-1, display->height()-1, 0xFFFF);  // White diagonal
+    display->drawCircle(display->width()/2, display->height()/2, 20, 0xF800);  // Red circle
+    
+    // Flush to display (required for frame buffer mode)
+    if (BotiEyes::DisplayFlushable* flushable = dynamic_cast<BotiEyes::DisplayFlushable*>(display)) {
+        flushable->flush();
+    }
+
+    ESP_LOGI(TAG, "Display test pattern complete");
+}
+```
+
+### Integration with BotiEyes Library
+
+```cpp
+#include "display_init.h"
+#include "BotiEyes.h"
+#include "EmotionState.h"
+#include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+static const char *TAG = "botieyes_app";
+
+extern "C" void app_main(void)
+{
+    // 1. Initialize display
+    Adafruit_GFX* display = display_init();
+    if (!display) {
+        ESP_LOGE(TAG, "Display init failed");
+        return;
+    }
+
+    // 2. Create BotiEyes instance
+    BotiEyes::BotiEyes eyes;
+    eyes.begin(display);
+    
+    // 3. Set initial emotion
+    eyes.setEmotion(BotiEyes::EmotionState::EMOTION_HAPPY, 0.8f);
+
+    ESP_LOGI(TAG, "BotiEyes initialized, starting animation loop");
+
+    // 4. Main animation loop
+    while (1) {
+        // Update eye animation
+        eyes.update();
+        
+        // Render to display
+        display->fillScreen(0x0000);  // Clear to black
+        eyes.draw();
+        
+        // Flush frame buffer (if enabled)
+        if (BotiEyes::DisplayFlushable* flushable = dynamic_cast<BotiEyes::DisplayFlushable*>(display)) {
+            flushable->flush();
+        }
+        
+        // Frame rate control (30 FPS = 33ms per frame)
+        vTaskDelay(pdMS_TO_TICKS(33));
+    }
+}
+```
+
+### Color Emotions Example (ST7789 Advantage)
+
+```cpp
+// ST7789 supports RGB565 colors - use them for emotion visualization
+
+// Define emotion colors (RGB565 format)
+#define COLOR_HAPPY    0x07E0  // Green
+#define COLOR_SAD      0x001F  // Blue
+#define COLOR_ANGRY    0xF800  // Red
+#define COLOR_CALM     0x7FFF  // Cyan
+#define COLOR_NEUTRAL  0xFFFF  // White
+
+uint16_t emotionToColor(BotiEyes::EmotionState::EmotionType emotion) {
+    switch (emotion) {
+        case BotiEyes::EmotionState::EMOTION_HAPPY:
+            return COLOR_HAPPY;
+        case BotiEyes::EmotionState::EMOTION_SAD:
+            return COLOR_SAD;
+        case BotiEyes::EmotionState::EMOTION_ANGRY:
+            return COLOR_ANGRY;
+        case BotiEyes::EmotionState::EMOTION_CALM:
+            return COLOR_CALM;
+        default:
+            return COLOR_NEUTRAL;
+    }
+}
+
+// In main loop:
+uint16_t eyeColor = emotionToColor(eyes.getCurrentEmotion());
+eyes.setColor(eyeColor);  // If BotiEyes supports color (future enhancement)
+```
+
+### Direct Pixel Drawing (Advanced)
+
+```cpp
+// For custom rendering or debugging
+
+void drawCustomPattern(Adafruit_GFX* display) {
+    // ST7789 uses RGB565 color format: 16-bit color (5 red, 6 green, 5 blue)
+    
+    // Helper: Convert RGB888 to RGB565
+    auto rgb565 = [](uint8_t r, uint8_t g, uint8_t b) -> uint16_t {
+        return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
+    };
+    
+    // Draw gradient
+    for (int y = 0; y < display->height(); y++) {
+        uint8_t intensity = (y * 255) / display->height();
+        uint16_t color = rgb565(intensity, 0, 255 - intensity);  // Red to blue
+        
+        display->drawLine(0, y, display->width()-1, y, color);
+    }
+}
+```
+
+### Error Handling Pattern
+
+```cpp
+#include "esp_st7789.h"
+#include "esp_log.h"
+
+static const char *TAG = "display_init_example";
+
+Adafruit_GFX* initST7789Display() {
+    #ifdef CONFIG_DISPLAY_TYPE_ST7789_SPI
+        // Read GPIO config from Kconfig
+        int16_t mosi = CONFIG_ST7789_MOSI_GPIO;
+        int16_t sclk = CONFIG_ST7789_SCLK_GPIO;
+        int16_t cs   = CONFIG_ST7789_CS_GPIO;
+        int16_t dc   = CONFIG_ST7789_DC_GPIO;
+        int16_t rst  = CONFIG_ST7789_RST_GPIO;
+        int16_t bl   = CONFIG_ST7789_BL_GPIO;
+        
+        uint16_t width   = CONFIG_ST7789_WIDTH;
+        uint16_t height  = CONFIG_ST7789_HEIGHT;
+        uint16_t offsetx = CONFIG_ST7789_OFFSET_X;
+        uint16_t offsety = CONFIG_ST7789_OFFSET_Y;
+        
+        // Create ST7789 adapter
+        auto* display = new (std::nothrow) BotiEyes::display::ESP_ST7789(width, height);
+        if (!display) {
+            ESP_LOGE(TAG, "Failed to allocate ESP_ST7789 object");
+            return nullptr;
+        }
+        
+        // Initialize SPI and display controller
+        if (!display->beginSpi(mosi, sclk, cs, dc, rst, bl, offsetx, offsety)) {
+            ESP_LOGE(TAG, "ST7789 SPI initialization failed");
+            delete display;
+            return nullptr;
+        }
+        
+        ESP_LOGI(TAG, "ST7789 initialized: %dx%d, offset=(%d,%d)",
+                 width, height, offsetx, offsety);
+        
+        return display;
+    #else
+        ESP_LOGE(TAG, "ST7789 not selected in menuconfig");
+        return nullptr;
+    #endif
+}
+```
+
+### Performance Monitoring
+
+```cpp
+#include "esp_timer.h"
+
+void measureFrameRate() {
+    const int FRAME_COUNT = 100;
+    int64_t start_time = esp_timer_get_time();
+    
+    for (int i = 0; i < FRAME_COUNT; i++) {
+        // Render frame
+        display->fillScreen(0x0000);
+        eyes.draw();
+        
+        if (BotiEyes::DisplayFlushable* flushable = dynamic_cast<BotiEyes::DisplayFlushable*>(display)) {
+            flushable->flush();
+        }
+    }
+    
+    int64_t end_time = esp_timer_get_time();
+    int64_t elapsed_us = end_time - start_time;
+    float fps = (FRAME_COUNT * 1000000.0f) / elapsed_us;
+    
+    ESP_LOGI(TAG, "Average frame rate: %.2f FPS (%.2f ms/frame)",
+             fps, 1000.0f / fps);
+}
+```
+
+### Memory Monitoring
+
+```cpp
+#include "esp_heap_caps.h"
+
+void reportMemoryUsage() {
+    size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
+    size_t total_heap = heap_caps_get_total_size(MALLOC_CAP_DEFAULT);
+    size_t used_heap = total_heap - free_heap;
+    
+    ESP_LOGI(TAG, "Heap: %zu / %zu bytes (%.1f%% used)",
+             used_heap, total_heap, (used_heap * 100.0f) / total_heap);
+    
+    #ifdef CONFIG_ST7789_FRAME_BUFFER
+        uint32_t fb_size = CONFIG_ST7789_WIDTH * CONFIG_ST7789_HEIGHT * 2;
+        ESP_LOGI(TAG, "Frame buffer: %lu bytes", fb_size);
+    #endif
+}
+```
 
 ---
 

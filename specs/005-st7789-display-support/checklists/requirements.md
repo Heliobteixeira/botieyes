@@ -37,4 +37,4 @@
 - ST7789 driver integration clearly defined with reference to tested implementation
 - Backward compatibility with SSD1306 explicitly required
 - Display abstraction layer properly specified as architectural requirement
-- All GPIO configuration parameters identified from reference implementation
+- All GPIO configuration parameters identified from nopnop2002/st7789 TTGO examples

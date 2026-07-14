@@ -1,0 +1,30 @@
+# Display Type Selection (Top-level menuconfig)
+
+menu "Display Type Selection"
+
+    choice DISPLAY_TYPE
+        prompt "Display driver type"
+        default DISPLAY_TYPE_SSD1306_I2C
+        help
+            Select the display driver to use for BotiEyes rendering.
+            This determines which hardware driver is compiled and linked.
+
+        config DISPLAY_TYPE_SSD1306_I2C
+            bool "SSD1306 (I2C)"
+            help
+                Monochrome 128x64 OLED via I2C (TTGO LoRa32 default).
+
+        config DISPLAY_TYPE_SSD1306_SPI
+            bool "SSD1306 (SPI)"
+            help
+                Monochrome 128x64 OLED via SPI.
+
+        config DISPLAY_TYPE_ST7789_SPI
+            bool "ST7789 (SPI)"
+            help
+                Color TFT LCD via SPI (TTGO T-Display 240x135).
+                Uses nopnop2002/st7789 managed component.
+
+    endchoice
+
+endmenu

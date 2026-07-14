@@ -478,6 +478,420 @@ void ESP_ST7789::display() {
 
 ---
 
+## Adding New Display Drivers
+
+**Target Audience**: Firmware developers integrating new display hardware into BotiEyes.
+
+**Goal**: Add support for a new display type without modifying the BotiEyes rendering engine.
+
+### Prerequisites
+
+Before starting, ensure you have:
+- ✅ Display hardware datasheet (pinout, initialization sequence, color format)
+- ✅ Working low-level driver component (nopnop2002-style or vendor SDK)
+- ✅ ESP-IDF development environment (v5.0+)
+- ✅ Test hardware (display module + ESP32 development board)
+
+---
+
+### Step 1: Create Display Adapter Class
+
+**Location**: `esp-idf/components/display/include/esp_<driver>.h`
+
+**Template**:
+```cpp
+#ifndef ESP_<DRIVER>_H
+#define ESP_<DRIVER>_H
+
+#include <Adafruit_GFX.h>
+#include "BotiEyes.h"
+#include "<driver>.h"  // External component header
+
+namespace BotiEyes {
+    namespace display {
+        
+        /**
+         * Adafruit_GFX adapter for <Driver> display driver.
+         * Wraps the <vendor>/<driver> component to provide hardware abstraction.
+         */
+        class ESP_<Driver> : public Adafruit_GFX, public ::BotiEyes::DisplayFlushable {
+        public:
+            // Constructor: width and height in pixels
+            ESP_<Driver>(uint16_t w, uint16_t h);
+            ~ESP_<Driver>() override;
+            
+            // Initialization: return true on success, false on failure
+            bool beginSpi(/* GPIO pins, config params */);
+            // OR
+            bool beginI2C(/* GPIO pins, I2C address */);
+            
+            // REQUIRED: Adafruit_GFX pure virtual override
+            void drawPixel(int16_t x, int16_t y, uint16_t color) override;
+            
+            // REQUIRED: DisplayFlushable interface
+            void flush() override;
+            
+            // OPTIONAL: Convenience method (alias for flush)
+            void display() { flush(); }
+            
+            // OPTIONAL: Clear screen
+            void clearDisplay();
+            
+        private:
+            <DriverContext_t> _dev;    // Native driver context
+            uint16_t *_frame_buffer;   // Optional frame buffer
+            bool _initialized;
+            bool _use_frame_buffer;
+        };
+        
+    } // namespace display
+} // namespace BotiEyes
+
+#endif
+```
+
+**Implementation** (`src/esp_<driver>.cpp`):
+```cpp
+#include "esp_<driver>.h"
+#include "esp_log.h"
+
+static const char *TAG = "ESP_<Driver>";
+
+namespace BotiEyes {
+    namespace display {
+        
+        ESP_<Driver>::ESP_<Driver>(uint16_t w, uint16_t h)
+            : Adafruit_GFX(w, h), _frame_buffer(nullptr), _initialized(false) {
+            memset(&_dev, 0, sizeof(_dev));
+            
+            // Allocate frame buffer if configured via Kconfig
+            #ifdef CONFIG_<DRIVER>_FRAME_BUFFER
+            _buffer_size = w * h * sizeof(uint16_t);  // RGB565
+            _frame_buffer = (uint16_t*)malloc(_buffer_size);
+            if (!_frame_buffer) {
+                ESP_LOGW(TAG, "Frame buffer allocation failed, using direct rendering");
+                _use_frame_buffer = false;
+            } else {
+                _use_frame_buffer = true;
+            }
+            #endif
+        }
+        
+        ESP_<Driver>::~ESP_<Driver>() {
+            if (_frame_buffer) {
+                free(_frame_buffer);
+            }
+        }
+        
+        bool ESP_<Driver>::beginSpi(/* params */) {
+            // 1. Initialize SPI bus via external driver component
+            spi_master_init(&_dev, mosi, sclk, cs, dc, rst, bl);
+            
+            // 2. Initialize display controller
+            <driver>_init(&_dev, _width, _height, offsetx, offsety);
+            
+            // 3. Clear display to known state
+            clearDisplay();
+            flush();
+            
+            _initialized = true;
+            ESP_LOGI(TAG, "Display initialized: %dx%d", _width, _height);
+            return true;
+        }
+        
+        void ESP_<Driver>::drawPixel(int16_t x, int16_t y, uint16_t color) {
+            // Bounds check
+            if (x < 0 || x >= _width || y < 0 || y >= _height) {
+                return;  // Silently clip
+            }
+            
+            // Frame buffer or direct rendering
+            if (_use_frame_buffer && _frame_buffer) {
+                _frame_buffer[y * _width + x] = color;
+            } else {
+                <driver>_draw_pixel(&_dev, x, y, color);
+            }
+        }
+        
+        void ESP_<Driver>::flush() {
+            if (!_initialized) return;
+            
+            if (_use_frame_buffer && _frame_buffer) {
+                // Bulk transfer frame buffer to display
+                <driver>_draw_pixels(&_dev, 0, 0, _width * _height, _frame_buffer);
+            }
+            // Direct mode: no-op (pixels already on screen)
+        }
+        
+        void ESP_<Driver>::clearDisplay() {
+            if (_use_frame_buffer && _frame_buffer) {
+                memset(_frame_buffer, 0, _width * _height * sizeof(uint16_t));
+            } else {
+                <driver>_fill_screen(&_dev, 0x0000);  // Black
+            }
+        }
+        
+    } // namespace display
+} // namespace BotiEyes
+```
+
+---
+
+### Step 2: Add Kconfig Configuration
+
+**Location**: `esp-idf/components/hal_board/Kconfig.projbuild`
+
+**Add to DISPLAY_TYPE choice**:
+```kconfig
+choice DISPLAY_TYPE
+    prompt "Display controller type"
+    default DISPLAY_TYPE_SSD1306_I2C
+    
+    config DISPLAY_TYPE_<DRIVER>_SPI
+        bool "<Driver> SPI"
+        help
+            Use <Driver> color TFT display via SPI.
+            Example hardware: <Board name>
+            
+    # ... existing options
+endchoice
+```
+
+**Create driver-specific config** (`components/<driver>_config/Kconfig.projbuild`):
+```kconfig
+menu "<Driver> Display Configuration"
+    depends on DISPLAY_TYPE_<DRIVER>_SPI
+    
+    comment "GPIO Pin Configuration (<Board> defaults)"
+    
+    config <DRIVER>_MOSI_GPIO
+        int "MOSI GPIO pin"
+        default 19
+        range -1 48
+        help
+            SPI MOSI pin for <Driver> display.
+    
+    config <DRIVER>_SCLK_GPIO
+        int "SCLK GPIO pin"
+        default 18
+        # ... similar for all GPIO pins
+    
+    config <DRIVER>_WIDTH
+        int "Display width (pixels)"
+        default 240
+        
+    config <DRIVER>_HEIGHT
+        int "Display height (pixels)"
+        default 135
+        
+    config <DRIVER>_FRAME_BUFFER
+        bool "Enable frame buffer"
+        default n
+        help
+            Allocate full frame buffer in RAM for faster rendering.
+            Memory usage: width * height * 2 bytes (RGB565)
+            
+endmenu
+```
+
+---
+
+### Step 3: Add Component Dependency
+
+**Method A: Managed Component** (recommended for public components)
+
+**Location**: `esp-idf/main/idf_component.yml`
+
+```yaml
+dependencies:
+  <vendor>/<driver>:
+    git: https://github.com/<vendor>/esp-idf-<driver>.git
+    path: components/<driver>
+```
+
+**Method B: Local Component**
+
+Place component in `esp-idf/components/<driver>/` or reference external path in CMakeLists.txt.
+
+---
+
+### Step 4: Update display_init.cpp
+
+**Location**: `esp-idf/components/display/src/display_init.cpp`
+
+**Add conditional include**:
+```cpp
+#if defined(CONFIG_DISPLAY_TYPE_<DRIVER>_SPI)
+#include "esp_<driver>.h"
+#endif
+```
+
+**Add to initializeDisplay()**:
+```cpp
+Adafruit_GFX* initializeDisplay() {
+    if (g_display != nullptr) {
+        return g_display;
+    }
+    
+    ESP_LOGI(TAG, "Initializing display based on Kconfig selection");
+    
+#if defined(CONFIG_DISPLAY_TYPE_<DRIVER>_SPI)
+    // <Driver> Display
+    ESP_LOGI(TAG, "Display type: <Driver> SPI");
+    auto *display = new ESP_<Driver>(CONFIG_<DRIVER>_WIDTH, CONFIG_<DRIVER>_HEIGHT);
+    
+    if (!display->beginSpi(
+            CONFIG_<DRIVER>_MOSI_GPIO,
+            CONFIG_<DRIVER>_SCLK_GPIO,
+            CONFIG_<DRIVER>_CS_GPIO,
+            CONFIG_<DRIVER>_DC_GPIO,
+            CONFIG_<DRIVER>_RST_GPIO,
+            CONFIG_<DRIVER>_BL_GPIO))
+    {
+        ESP_LOGE(TAG, "<Driver> SPI initialization failed");
+        delete display;
+        return nullptr;
+    }
+    
+    g_display = display;
+    g_flushable = display;
+    display->clearDisplay();
+    display->flush();
+    
+#elif ...
+```
+
+**Add compile-time assertion** (after includes):
+```cpp
+#if defined(CONFIG_DISPLAY_TYPE_<DRIVER>_SPI)
+// Verify ESP_<Driver> implements required interfaces
+static_assert(std::is_base_of<Adafruit_GFX, BotiEyes::display::ESP_<Driver>>::value,
+              "ESP_<Driver> must inherit from Adafruit_GFX");
+static_assert(std::is_base_of<::BotiEyes::DisplayFlushable, BotiEyes::display::ESP_<Driver>>::value,
+              "ESP_<Driver> must inherit from DisplayFlushable");
+#endif
+```
+
+---
+
+### Step 5: Update display/CMakeLists.txt
+
+**Location**: `esp-idf/components/display/CMakeLists.txt`
+
+**Add conditional compilation**:
+```cmake
+# Conditionally add <Driver> driver when selected in menuconfig
+idf_build_get_property(sdkconfig_header SDKCONFIG_HEADER)
+if(EXISTS "${sdkconfig_header}")
+    file(STRINGS "${sdkconfig_header}" display_type_<driver>
+         REGEX "CONFIG_DISPLAY_TYPE_<DRIVER>_SPI=y")
+    if(display_type_<driver>)
+        list(APPEND DISPLAY_SRCS "src/esp_<driver>.cpp")
+        list(APPEND DISPLAY_REQUIRES <vendor>__<driver>)  # Managed component name
+    endif()
+endif()
+```
+
+---
+
+### Step 6: Build and Test
+
+**Build**:
+```bash
+cd esp-idf
+source ~/.espressif/tools/activate_idf_v6.0.1.sh
+idf.py menuconfig
+# Navigate to "HAL Board Configuration" → "Display controller type"
+# Select "<Driver> SPI"
+# Configure GPIO pins in "<Driver> Display Configuration"
+idf.py build
+```
+
+**Flash**:
+```bash
+idf.py flash monitor
+```
+
+**Verify**:
+1. ✅ Build completes without errors
+2. ✅ Initialization log shows correct display type
+3. ✅ Display backlight turns on
+4. ✅ BotiEyes eyes appear on screen
+5. ✅ Eye animations render smoothly (≥10 FPS)
+6. ✅ No visual artifacts or flickering
+
+---
+
+### Step 7: Backward Compatibility Verification
+
+**Critical**: Ensure existing display configurations still build.
+
+**Test SSD1306 I2C** (default):
+```bash
+idf.py menuconfig
+# Select "Display controller type" → "SSD1306 I2C"
+idf.py build
+# Verify: No <driver> files compiled, no <driver> component linked
+```
+
+**Test SSD1306 SPI**:
+```bash
+idf.py menuconfig
+# Select "Display controller type" → "SSD1306 SPI"
+idf.py build
+# Verify: Only SSD1306 compiled
+```
+
+**Expected Result**: All three configurations (SSD1306 I2C, SSD1306 SPI, <Driver> SPI) build successfully without code changes in BotiEyes.
+
+---
+
+### Troubleshooting
+
+**Build errors**:
+- ❌ "undefined reference to `<driver>_init`": Component not linked (check CMakeLists.txt)
+- ❌ "CONFIG_<DRIVER>_WIDTH undeclared": Kconfig not loaded (check Kconfig.projbuild location)
+- ❌ Static assertion failed: Class doesn't inherit from required base (check class declaration)
+
+**Runtime errors**:
+- ❌ Display blank: Check GPIO pin assignments, power supply, initialization sequence
+- ❌ Initialization failed: Check SPI/I2C bus conflicts, GPIO conflicts, hardware connections
+- ❌ Artifacts/corruption: Check SPI clock speed (try lowering to 20 MHz), frame buffer alignment
+
+**Performance issues**:
+- ❌ <10 FPS: Enable frame buffer mode, increase SPI clock speed
+- ❌ High memory usage: Disable frame buffer, use direct rendering
+
+---
+
+### Best Practices
+
+1. ✅ **Test on actual hardware** before submitting (emulator insufficient for SPI/I2C validation)
+2. ✅ **Document validated GPIO pins** in Kconfig help text (reference board pinout)
+3. ✅ **Provide sensible defaults** (tested configuration that works out-of-box)
+4. ✅ **Match nopnop2002 conventions** (SPI host, clock speed, offset handling)
+5. ✅ **Log initialization steps** (GPIO pins, resolution, SPI speed) for debugging
+6. ✅ **Handle errors gracefully** (return false on init failure, clip out-of-bounds pixels)
+7. ✅ **Measure frame rate** (ESP_LOGI timestamps before/after flush())
+8. ✅ **Document memory usage** (frame buffer size, driver overhead)
+
+---
+
+### Example: ST7789 Integration
+
+**Reference Implementation**: See Feature 005 completed tasks (T001-T026) for a working example.
+
+**Files**:
+- `components/display/include/esp_st7789.h` - Adapter class declaration
+- `components/display/src/esp_st7789.cpp` - Implementation
+- `components/st7789_config/Kconfig.projbuild` - GPIO and SPI configuration
+- `main/idf_component.yml` - Managed component dependency
+- `components/display/src/display_init.cpp` - Factory integration
+
+**Result**: TTGO T-Display (240×135 ST7789) supported without BotiEyes code changes.
+
+---
+
 ## References
 
 - **Adafruit_GFX Library**: https://github.com/adafruit/Adafruit-GFX-Library

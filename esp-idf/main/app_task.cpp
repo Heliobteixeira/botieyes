@@ -259,6 +259,12 @@ void app_task(void *arg)
         // Update BotiEyes animation and rendering
         eyes->update();
 
+        // Debug: Log after update to verify it completes
+        if (frame_count < 5)
+        {
+            ESP_LOGI(TAG, "Frame %lu: update() completed", frame_count);
+        }
+
         // Stack watermark monitoring (FR-034) - T048
         if (frame_count % 500 == 0)
         { // Check every ~20 seconds (500 * 40ms)
@@ -295,9 +301,10 @@ void app_task(void *arg)
         {
             esp_task_wdt_reset();
         }
-        else if (frame_count > 2)
-        {                               // Give initialization time to complete (>80ms)
+        else if (frame_count > 0)
+        {                               // Enable after first frame completes
             watchdog_registered = true; // Assume registered after startup
+            ESP_LOGI(TAG, "Watchdog feeding enabled for app task (frame_count=%lu)", frame_count);
         }
 
         frame_count++;

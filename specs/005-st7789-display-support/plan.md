@@ -6,7 +6,7 @@
 
 ## Summary
 
-Add ST7789 SPI color display driver support to botieyes firmware while maintaining backward compatibility with existing SSD1306 displays. Integrate the tested ST7789 component from reference repository `/Users/helioteixeira/dev/esp-idf-st7789`, extend the HAL layer architecture, and provide build-time configuration through menuconfig for selecting display type and GPIO pin assignments.
+Add ST7789 SPI color display driver support to botieyes firmware while maintaining backward compatibility with existing SSD1306 displays. Integrate the nopnop2002/st7789 component from the ESP Component Registry (same author as the existing SSD1306 driver), extend the HAL layer architecture, and provide build-time configuration through menuconfig for selecting display type and GPIO pin assignments.
 
 ## Technical Context
 
@@ -15,8 +15,8 @@ Add ST7789 SPI color display driver support to botieyes firmware while maintaini
 **Primary Dependencies**: 
 - ESP-IDF v5.0+ (esp_driver_spi, esp_driver_gpio, FreeRTOS)
 - Adafruit GFX (managed component for rendering abstraction)
-- ST7789 driver component (to be integrated from reference repository)
-- nopnop2002 SSD1306 component (existing, for backward compatibility)
+- nopnop2002/st7789 (managed component via ESP Component Registry)
+- nopnop2002/esp-idf-ssd1306 (existing, for backward compatibility)
 
 **Storage**: N/A (embedded firmware with NVS for configuration)
 
@@ -50,7 +50,7 @@ Add ST7789 SPI color display driver support to botieyes firmware while maintaini
 
 **✓ II. Maintainable Code**: Common display interface isolates driver-specific code. Clear separation: component/st7789 (driver), component/display (abstraction), hal_board (initialization).
 
-**✓ III. Performance-First Design**: ST7789 SPI can run at 20-80 MHz (vs I2C ~400 kHz). Frame buffer optional to balance speed vs memory. Must profile frame rates after integration.
+**✓ III. Performance-First Design**: ST7789 SPI can run at 20-80 MHz (vs I2C ~400 kHz). Frame buffer optional to balance speed vs memory. nopnop2002 component is proven and optimized. Must profile frame rates after integration.
 
 **✓ IV. Hardware Abstraction**: Display interface already abstracts SSD1306. ST7789 extends same abstraction. Core BotiEyes logic unchanged (uses Adafruit_GFX interface).
 
@@ -60,7 +60,7 @@ Add ST7789 SPI color display driver support to botieyes firmware while maintaini
 
 **✓ VII. Extensible Architecture**: Design explicitly supports future display drivers by implementing common interface. Display type enum extensible.
 
-**✓ VIII. Continuous Learning**: Reference implementation validated on hardware provides proven configuration values.
+**✓ VIII. Continuous Learning**: nopnop2002 community-maintained component provides validated configuration values for common hardware (TTGO T-Display, etc.).
 
 ## Project Structure
 

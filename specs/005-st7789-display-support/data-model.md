@@ -94,9 +94,10 @@
 - `setBrightness(level) -> void`: Adjust display brightness (if supported)
 
 **Relationships**:
-- Base class for `ESP_SSD1306` and `ESP_ST7789` adapter classes
-- Extends `Adafruit_GFX` interface (provides drawLine, drawRect, etc.)
-- Used by BotiEyes rendering logic (display-agnostic)
+- Abstract interface concept (realized through Adafruit_GFX base class)
+- `ESP_SSD1306` and `ESP_ST7789` both inherit from `Adafruit_GFX` (public inheritance)
+- BotiEyes holds `Adafruit_GFX*` pointer to whichever adapter was created
+- Graphics methods (drawLine, fillRect, etc.) provided by Adafruit_GFX base class
 
 **Validation Rules**: N/A (interface definition)
 
@@ -128,9 +129,10 @@
 - `setRotation(angle)`: Configure display orientation (0°, 90°, 180°, 270°)
 - `backlightOn()`, `backlightOff()`: Control backlight GPIO
 
-**Relationships**:
-- Implements `DisplayDriver` interface via Adafruit_GFX inheritance
+**Rnherits from `Adafruit_GFX` (`class ESP_ST7789 : public Adafruit_GFX`)
 - Owns `TFT_t _dev` (native driver state)
+- Created by `initializeDisplay()` when `CONFIG_DISPLAY_TYPE_ST7789_SPI` selected
+- Returned as `Adafruit_GFX*` pointer to BotiEyes (upcast, polymorphism)
 - Used by `initializeDisplay()` when `CONFIG_DISPLAY_TYPE_ST7789_SPI` selected
 - Delegates to `st7789.c` functions: `lcdInit()`, `lcdDrawPixel()`, `lcdFillScreen()`, etc.
 
@@ -148,7 +150,7 @@
 
 ### 5. TFT_t (Native Driver Context)
 
-**Description**: ST7789 driver state structure (from reference implementation). Encapsulates hardware handles and display parameters.
+**Description**: ST7789 driver state structure (from nopnop2002/st7789 component). Encapsulates hardware handles and display parameters.
 
 **Attributes**:
 - `_SPIHandle`: spi_device_handle_t (ESP-IDF SPI device handle)
@@ -204,47 +206,58 @@
 ## Entity Relationship Diagram
 
 ```text
+Configuration Layer (Compile-time):
 ┌─────────────────┐
-│   DisplayType   │ (enum: SSD1306_I2C, SSD1306_SPI, ST7789_SPI)
+│   DisplayType   │ ← Kconfig choice: SSD1306_I2C, SSD1306_SPI, ST7789_SPI
 └────────┬────────┘
-         │ selects
+         │ selects ONE
          ▼
 ┌─────────────────┐         ┌──────────────────┐
 │  DisplayConfig  │────────▶│ GPIO Validation  │
 └────────┬────────┘         └──────────────────┘
-         │ configures
+         │ provides pins/settings
          ▼
-┌─────────────────────────────────────┐
-│       DisplayDriver (Interface)     │
-│  - init(), drawPixel(), flush()     │
-└───────────┬─────────────────────────┘
-            │ implemented by
-      ┌─────┴──────┐
-      ▼            ▼
-┌────────────┐  ┌────────────┐
-│ESP_SSD1306 │  │ESP_ST7789  │
-│  (adapter) │  │  (adapter) │
-└─────┬──────┘  └─────┬──────┘
-      │               │ owns
-      │               ▼
-      │         ┌──────────┐
-      │         │  TFT_t   │────────▶ spi_device_handle_t
-      │         │ (native) │          (ESP-IDF SPI)
-      │         └──────────┘
-      │
-      └──────────────────┬──────────────────┐
-                         ▼                  ▼
-                  ┌────────────┐    ┌────────────────┐
-                  │ BotiEyes   │    │  Adafruit_GFX  │
-                  │ Rendering  │    │   (graphics)   │
-                  └────────────┘    └────────────────┘
-                         │                  │
-                         └──────┬───────────┘
-                                ▼
-                         ┌────────────┐
-                         │ColorFormat │ (RGB565/Monochrome)
-                         └────────────┘
+
+Abstract Interface Layer (Polymorphism):
+┌──────────────────────────────────────────────┐
+│          Adafruit_GFX (abstract base)        │ ← BotiEyes talks to THIS
+│  virtual drawPixel(), fillCircle(), etc.     │
+└────────────────┬─────────────────────────────┘
+                 │ inherited by (is-a relationship)
+         ┌───────┴─────────┐
+         ▼                 ▼
+  ┌─────────────┐    ┌─────────────┐
+  │ESP_SSD1306  │    │ESP_ST7789   │ ← Both ARE Adafruit_GFX
+  │: public     │    │: public     │   (C++ inheritance)
+  │Adafruit_GFX │    │Adafruit_GFX │
+  └──────┬──────┘    └──────┬──────┘
+         │                  │ owns
+         │                  ▼
+         │            ┌──────────┐
+         │            │  TFT_t   │──────▶ spi_device_handle_t
+         │            │(C driver)│        (ESP-IDF hardware)
+         │            └──────────┘
+         │
+         └───────────────┬────────────────┐
+                         ▼                │
+Application Layer:       │                │
+  ┌────────────────┐    │                │
+  │   BotiEyes     │◀───┘                │
+  │   Rendering    │                     │
+  │                │                     │
+  │ holds:         │                     │
+  │ Adafruit_GFX*  │─────────────────────┘
+  │   (points to   │   Runtime: pointer to ONE adapter
+  │    ONE adapter)│   (either ESP_SSD1306* or ESP_ST7789*)
+  └────────┬───────┘
+           │ uses
+           ▼
+    ┌────────────┐
+    │ColorFormat │ ← RGB565 (ST7789) or Monochrome (SSD1306)
+    └────────────┘
 ```
+
+**Key Insight**: BotiEyes holds ONE `Adafruit_GFX*` pointer. At compile-time, `initializeDisplay()` creates either ESP_SSD1306 or ESP_ST7789 based on Kconfig. BotiEyes calls methods like `drawPixel()` through the pointer, and C++ virtual functions dispatch to the correct adapter implementation at runtime. This is polymorphism - one interface, multiple implementations.
 
 ---
 
@@ -283,20 +296,29 @@
 ## Data Flow: Rendering
 
 ```text
-BotiEyes::render() [BotiEyes.cpp]
+Bot│ Holds: Adafruit_GFX* display
+   │        (points to ESP_ST7789 instance at runtime)
    │
-   ├─▶ gfx->fillScreen(BLACK)  [Adafruit_GFX method]
-   │   └─▶ ESP_ST7789::drawPixel() x many times
-   │       └─▶ if (frame_buffer): _buffer[y*width + x] = color
-   │           else: lcdDrawPixel(&_dev, x, y, color) [st7789.c]
+   ├─▶ display->fillScreen(BLACK)  [Adafruit_GFX method]
+   │   └─▶ Calls drawPixel() many times via virtual function table
+   │       └─▶ Dispatches to: ESP_ST7789::drawPixel(x, y, color)
+   │           └─▶ if (frame_buffer): _buffer[y*width + x] = color
+   │               else: lcdDrawPixel(&_dev, x, y, color) [st7789.c]
    │
-   ├─▶ gfx->fillCircle(x, y, r, WHITE)  [Draw eye pupil]
-   │   └─▶ ESP_ST7789::drawPixel() x many times
+   ├─▶ display->fillCircle(x, y, r, WHITE)  [Draw eye]
+   │   └─▶ Adafruit_GFX::fillCircle() implementation
+   │       └─▶ Calls drawPixel() many times (~900 for typical eye)
+   │           └─▶ Virtual dispatch → ESP_ST7789::drawPixel()
    │
    └─▶ flushable->flush()  [DisplayFlushable interface]
-       └─▶ ESP_ST7789::display()
+       └─▶ Calls: ESP_ST7789::display()
            └─▶ if (frame_buffer): 
-                   lcdDrawMultiPixels() / lcdDrawColors() [bulk SPI transfer]
+                   lcdDrawMultiPixels(&_dev, ...) [bulk SPI transfer, ~13ms]
+               else: 
+                   No-op (pixels already written directly to hardware)
+
+Note: If SSD1306 was selected instead, the same BotiEyes code would dispatch
+      to ESP_SSD1306::drawPixel() - BotiEyes doesn't know which adapter it has!lors() [bulk SPI transfer]
                else: 
                    No-op (already written directly)
 ```
@@ -344,7 +366,7 @@ BotiEyes::render() [BotiEyes.cpp]
 
 ### Initialization Errors
 - **GPIO conflict**: Logged as error, returns ESP_FAIL
-- **SPI bus init failure**: assert() in reference implementation (fail-fast)
+- **SPI bus init failure**: assert() in nopnop2002 component (fail-fast)
 - **Frame buffer alloc failure**: Logged, falls back to direct rendering
 - **Display not responding**: Initialization commands may timeout (no hardware detection)
 

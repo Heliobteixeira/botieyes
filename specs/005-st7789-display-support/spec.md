@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Check the repo below current implementation of a new display driver st7789 and adapt the current project to support it (bring also the configured values as the repo has been successfully tested on the target board): /Users/helioteixeira/dev/esp-idf-st7789"
+**Input**: User description: "Check the repo below current implementation of a new display driver st7789 and adapt the current project to support it (bring also the configured values as the repo has been successfully tested on the target board): https://github.com/nopnop2002/esp-idf-st7789 (community component, same author as existing SSD1306 driver)"
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -42,19 +42,19 @@ Developers can select between SSD1306 (I2C/SPI monochrome) and ST7789 (SPI color
 
 ---
 
-### User Story 3 - Migrate Configuration from Reference Implementation (Priority: P2)
+### User Story 3 - Use Validated Configuration from nopnop2002 Component (Priority: P2)
 
-Developers can reference the tested ST7789 configuration values from `/Users/helioteixeira/dev/esp-idf-st7789` to ensure the botieyes implementation uses the same proven GPIO pins, SPI settings, and display parameters that work on the target board.
+Developers can use the tested ST7789 configuration values from the nopnop2002/st7789 community component (same author as existing SSD1306 driver) to ensure the botieyes implementation uses proven GPIO pins, SPI settings, and display parameters that work on common hardware like TTGO T-Display.
 
-**Why this priority**: Reduces risk of integration issues by using validated configuration. Important for first successful deployment but not blocking for overall ST7789 support.
+**Why this priority**: Reduces risk of integration issues by using validated configuration from a widely-used community component. Important for first successful deployment but not blocking for overall ST7789 support.
 
-**Independent Test**: Compare Kconfig defaults in botieyes with the reference implementation. Flash firmware with migrated configuration to the same hardware that runs the reference implementation. Verify display works identically.
+**Independent Test**: Compare Kconfig defaults in botieyes with nopnop2002 component examples. Flash firmware to TTGO T-Display. Verify display works as expected.
 
 **Acceptance Scenarios**:
 
-1. **Given** the reference esp-idf-st7789 project has tested GPIO pin assignments, **When** ST7789 configuration is added to botieyes, **Then** the default GPIO values in Kconfig match the reference implementation
-2. **Given** the reference implementation uses specific SPI host and clock speed, **When** integrating ST7789 driver, **Then** the botieyes configuration uses the same SPI host and clock speed settings
-3. **Given** the reference implementation has display width/height/offset parameters, **When** configuring ST7789 in botieyes, **Then** these parameters are available in menuconfig with reference values as defaults
+1. **Given** the nopnop2002/st7789 component has tested GPIO pin assignments for TTGO T-Display, **When** ST7789 configuration is added to botieyes, **Then** the default GPIO values in Kconfig match nopnop2002 TTGO examples (MOSI=19, SCLK=18, CS=5, DC=16, RST=23, BL=4)
+2. **Given** the nopnop2002 component uses specific SPI host and clock speed, **When** integrating ST7789 driver, **Then** the botieyes configuration uses the same SPI host (SPI2_HOST) and compatible clock speed settings (20-80 MHz configurable)
+3. **Given** the nopnop2002 component supports multiple display resolutions with offset parameters, **When** configuring ST7789 in botieyes, **Then** these parameters are available in menuconfig with TTGO T-Display values as defaults (240x135, offsetx=40, offsety=52)
 
 ---
 
@@ -87,9 +87,9 @@ The display abstraction layer allows the botieyes rendering logic to work with a
 
 - **FR-001**: System MUST support ST7789 SPI color display driver as an additional display option alongside existing SSD1306 support
 - **FR-002**: System MUST provide Kconfig menu options to select display type (SSD1306_I2C, SSD1306_SPI, ST7789_SPI) at build time
-- **FR-003**: System MUST allow configuration of ST7789-specific parameters through menuconfig: screen width, screen height, X offset, Y offset, MOSI GPIO, SCLK GPIO, CS GPIO, DC GPIO, RESET GPIO, Backlight GPIO, SPI host selection
-- **FR-004**: System MUST use the same ST7789 driver component structure and API as the reference implementation at `/Users/helioteixeira/dev/esp-idf-st7789/components/st7789`
-- **FR-005**: System MUST provide default GPIO pin values in Kconfig that match the tested configuration from the reference implementation
+- **FR-003**: System MUST allow configuration of ST7789-specific parameters through menuconfig: screen width, screen height, X offset, Y offset, MOSI GPIO, SCLK GPIO, CS GPIO, DC GPIO, RESET GPIO, Backlight GPIO, SPI host selection (CS and Backlight GPIO support -1 to disable)
+- **FR-004**: System MUST use the nopnop2002/st7789 managed component from the ESP Component Registry (same author as existing nopnop2002 SSD1306 driver for API consistency)
+- **FR-005**: System MUST provide default GPIO pin values in Kconfig that match the tested TTGO T-Display configuration from nopnop2002 component examples
 - **FR-006**: System MUST maintain backward compatibility with existing SSD1306 display configurations (both I2C and SPI modes)
 - **FR-007**: System MUST initialize the selected display driver during boot and provide error handling for initialization failures
 - **FR-008**: Display component MUST provide a common abstraction interface that works for both SSD1306 and ST7789 displays
@@ -100,7 +100,7 @@ The display abstraction layer allows the botieyes rendering logic to work with a
 ### Key Entities
 
 - **DisplayDriver**: Abstract interface for all display types (SSD1306, ST7789, future drivers); provides init, draw_pixel, flush, clear operations
-- **ST7789Component**: ESP-IDF component containing ST7789 driver code (st7789.c, st7789.h, fontx files) adapted from reference implementation
+- **ST7789Component**: nopnop2002/st7789 managed component from ESP Component Registry containing ST7789 driver code (st7789.c, st7789.h, fontx files)
 - **DisplayConfig**: Configuration structure containing display type, resolution, GPIO pins, SPI settings selected via menuconfig
 - **ColorFormat**: Representation for pixel colors (monochrome bitmap for SSD1306, RGB565 for ST7789)
 
@@ -110,20 +110,21 @@ The display abstraction layer allows the botieyes rendering logic to work with a
 
 - **SC-001**: Botieyes firmware successfully builds with ST7789 display type selected in menuconfig without compilation errors
 - **SC-002**: Firmware flashed to ESP32 with ST7789 display initializes the display within 2 seconds of boot
-- **SC-003**: Animated eyes render on ST7789 240x240 display with smooth animation (minimum 10 FPS visible frame rate)
+- **SC-003**: Animated eyes render on ST7789 240x135 display with smooth animation (minimum 10 FPS visible frame rate)
 - **SC-004**: Developers can switch between SSD1306 and ST7789 display configurations by changing menuconfig settings alone (zero code changes required)
-- **SC-005**: ST7789 configuration uses the same GPIO pin defaults as the reference implementation that was successfully tested on target hardware
+- **SC-005**: ST7789 configuration uses the same GPIO pin defaults as the nopnop2002 TTGO T-Display examples that have been successfully tested on target hardware
 - **SC-006**: Display abstraction allows future display drivers to be added by implementing common interface without modifying application code
 
 ## Assumptions
 
 - Target hardware has an ESP32 board connected to an ST7789-based TFT display via SPI interface
-- The reference ST7789 implementation at `/Users/helioteixeira/dev/esp-idf-st7789` has been successfully tested on the same or compatible hardware
+- The nopnop2002/st7789 component (https://github.com/nopnop2002/esp-idf-st7789) has been tested on TTGO T-Display and other common ST7789 hardware
 - Display resolution is 240x135 pixels for TTGO T-Display (configurable for other sizes like 240x240, 240x320)
-- Project uses ESP-IDF v5.0 or later (as required by the reference ST7789 implementation)
-- The ST7789 driver will be integrated as an ESP-IDF component following the same structure as the reference implementation
-- Color rendering will use RGB565 format (16-bit color depth) as used in the reference implementation
-- SPI communication will use the same host (SPI2_HOST/SPI3_HOST) and clock speed as the reference implementation
+- Project uses ESP-IDF v5.0 or later (as required by the nopnop2002/st7789 component)
+- The nopnop2002/st7789 managed component is available via ESP Component Registry
+- The ST7789 driver will be integrated as a managed component, automatically fetched during build
+- Color rendering will use RGB565 format (16-bit color depth) as used in the nopnop2002/st7789 component
+- SPI communication will use the same host (SPI2_HOST/SPI3_HOST) and clock speed as the nopnop2002 component
 - The existing BotiEyes rendering logic will be adapted to work with both monochrome (SSD1306) and color (ST7789) displays through an abstraction layer
-- Frame buffer usage will be configurable via menuconfig as in the reference implementation (65KB for 240x135 is reasonable for ESP32, 12.5% of SRAM)
+- Frame buffer usage will be configurable via menuconfig as in the nopnop2002 component (65KB for 240x135 is reasonable for ESP32, 12.5% of SRAM)
 - The HAL layer architecture from feature 004 will be extended to support multiple display drivers

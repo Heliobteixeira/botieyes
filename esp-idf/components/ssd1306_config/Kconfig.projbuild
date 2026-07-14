@@ -1,0 +1,107 @@
+# SSD1306 Display Configuration
+#
+# Configuration options for SSD1306 monochrome OLED display support.
+# Default values are validated for TTGO LoRa32 (I2C) and generic SSD1306 modules.
+#
+# GPIO pin assignments match nopnop2002/esp-idf-ssd1306 tested configurations.
+
+menu "SSD1306 Display Configuration"
+    depends on DISPLAY_TYPE_SSD1306_I2C || DISPLAY_TYPE_SSD1306_SPI
+
+    comment "I2C Configuration (TTGO LoRa32 defaults)"
+    depends on DISPLAY_TYPE_SSD1306_I2C
+
+    config BOTIEYES_OLED_I2C_SDA
+        int "SDA GPIO pin"
+        depends on DISPLAY_TYPE_SSD1306_I2C
+        default 4
+        range -1 48
+        help
+            I2C SDA (Data) GPIO pin for SSD1306 display.
+            TTGO LoRa32 validated value: GPIO 4
+
+    config BOTIEYES_OLED_I2C_SCL
+        int "SCL GPIO pin"
+        depends on DISPLAY_TYPE_SSD1306_I2C
+        default 15
+        range -1 48
+        help
+            I2C SCL (Clock) GPIO pin for SSD1306 display.
+            TTGO LoRa32 validated value: GPIO 15
+
+    config BOTIEYES_OLED_I2C_RST
+        int "RESET GPIO pin"
+        depends on DISPLAY_TYPE_SSD1306_I2C
+        default 16
+        range -1 48
+        help
+            Display reset GPIO pin.
+            TTGO LoRa32 validated value: GPIO 16
+            Set to -1 to disable hardware reset.
+
+    config BOTIEYES_OLED_I2C_ADDRESS
+        hex "I2C Address"
+        depends on DISPLAY_TYPE_SSD1306_I2C
+        default 0x3C
+        help
+            I2C slave address for SSD1306 display.
+            Common values: 0x3C (most modules), 0x3D (alternative)
+            TTGO LoRa32 uses 0x3C.
+
+    comment "SPI Configuration (Generic SSD1306 SPI defaults)"
+    depends on DISPLAY_TYPE_SSD1306_SPI
+
+    config BOTIEYES_OLED_SPI_MOSI
+        int "MOSI GPIO pin"
+        depends on DISPLAY_TYPE_SSD1306_SPI
+        default 11
+        range -1 48
+        help
+            SPI MOSI (Master Out Slave In) GPIO pin.
+
+    config BOTIEYES_OLED_SPI_SCK
+        int "SCK GPIO pin"
+        depends on DISPLAY_TYPE_SSD1306_SPI
+        default 12
+        range -1 48
+        help
+            SPI clock GPIO pin.
+
+    config BOTIEYES_OLED_SPI_CS
+        int "CS GPIO pin (Chip Select)"
+        depends on DISPLAY_TYPE_SSD1306_SPI
+        default 10
+        range -1 48
+        help
+            SPI chip select GPIO pin.
+            Set to -1 to pull CS low via hardware.
+
+    config BOTIEYES_OLED_SPI_DC
+        int "DC GPIO pin (Data/Command)"
+        depends on DISPLAY_TYPE_SSD1306_SPI
+        default 13
+        range -1 48
+        help
+            Data/Command control GPIO pin.
+            Low=command, High=data.
+
+    config BOTIEYES_OLED_SPI_RST
+        int "RESET GPIO pin"
+        depends on DISPLAY_TYPE_SSD1306_SPI
+        default 14
+        range -1 48
+        help
+            Display reset GPIO pin.
+            Set to -1 to disable hardware reset.
+
+    config BOTIEYES_OLED_SPI_FREQ
+        int "SPI frequency (Hz)"
+        depends on DISPLAY_TYPE_SSD1306_SPI
+        default 10000000
+        range 1000000 20000000
+        help
+            SPI bus clock frequency in Hz.
+            Default: 10 MHz (conservative, works on all hardware)
+            Maximum: 20 MHz (may require short wires)
+
+endmenu

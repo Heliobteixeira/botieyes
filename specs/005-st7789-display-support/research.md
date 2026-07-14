@@ -8,18 +8,39 @@
 
 **Question**: How should the ST7789 component from the reference implementation be integrated into the botieyes project structure?
 
-**Decision**: Create a dedicated `esp-idf/components/st7789` component that mirrors the reference implementation structure.
+**Decision**: Use nopnop2002/st7789 as a managed component via ESP Component Registry, added to `esp-idf/main/idf_component.yml`.
 
 **Rationale**:
-- Reference implementation at `/Users/helioteixeira/dev/esp-idf-st7789/components/st7789/` is a complete, tested ESP-IDF component
-- Component structure includes: `st7789.{c,h}`, `fontx.{c,h}`, `CMakeLists.txt`, `Kconfig.projbuild`
-- Direct integration preserves proven GPIO configurations and SPI initialization sequences
-- Maintains compatibility with ESP-IDF component dependency system
-- Allows future updates from upstream if needed
+- **Same author consistency**: Already using `nopnop2002/esp-idf-ssd1306` - same API patterns
+- **Proven community component**: 409 GitHub stars, 82 forks, actively maintained
+- **Component Registry advantage**: Automatic dependency management, version tracking, no manual file copying
+- **API familiarity**: Functions like `spi_master_init()`, `lcdInit()`, `lcdDrawPixel()` match existing SSD1306 patterns used in [esp_ssd1306.cpp](../../esp-idf/components/display/src/esp_ssd1306.cpp)
+- **Hardware validated**: Includes proven GPIO configurations and initialization sequences for TTGO T-Display and other common boards
+- **Maintainability**: Updates via component manager, not manual git submodule/file copying
+- **Standard ESP-IDF pattern**: Managed components are the recommended approach per ESP-IDF documentation
+
+**Component details**:
+- Repository: https://github.com/nopnop2002/esp-idf-st7789
+- Last updated: 2 months ago (2026-05)
+- ESP-IDF support: v5.0+
+- Tested hardware: TTGO T-Display, generic 1.3", 1.14", 1.54", 1.9", 2.0", 2.4", 2.8" ST7789 displays
+- Features: Frame buffer support, multiple resolutions, SPI clock tuning, JPEG/PNG/BMP decoding
+
+**Integration approach**:
+```yaml
+# esp-idf/main/idf_component.yml
+dependencies:
+  nopnop2002/st7789:
+    path: components/st7789/
+    git: https://github.com/nopnop2002/esp-idf-st7789.git
+```
 
 **Alternatives considered**:
-- **Merge into existing display component**: Rejected. ST7789 is ~2000 LOC with font rendering. Mixing driver implementations violates single responsibility principle.
-- **Rewrite from scratch**: Rejected. Reference implementation is tested on target hardware. Rewriting introduces regression risk without benefit.
+- **Registry components (jbrilha/esp_lcd_st7789)**: Rejected. Uses ESP-IDF esp_lcd panel API (different architecture than our Adafruit_GFX pattern).
+- **Registry component (andresragot/driver_st7789)**: Rejected. Only 36 downloads, requires extra driver_lcd dependency, C++ architecture differs from our C wrapper pattern.
+- **Manual git submodule**: Rejected. Managed components provide better dependency management and version tracking.
+- **Merge into existing display component**: Rejected. ST7789 driver is ~2000 LOC. Mixing driver implementations violates single responsibility principle.
+- **Rewrite from scratch**: Rejected. nopnop2002 implementation is proven on target hardware. Rewriting introduces regression risk without benefit.
 
 ---
 
@@ -62,9 +83,9 @@ endchoice
 
 **Question**: How should GPIO pin assignments for ST7789 be configured and what defaults should be used?
 
-**Decision**: Use reference implementation's Kconfig pattern with validated pin defaults from `/Users/helioteixeira/dev/esp-idf-st7789/components/st7789/Kconfig.projbuild`.
+**Decision**: Use nopnop2002/st7789 component's validated pin defaults, configured via project-level Kconfig (not in managed component).
 
-**Validated GPIO defaults** (targeting TTGO T-Display ESP32 with 240x135 ST7789):
+**Validated GPIO defaults** (from nopnop2002 TTGO T-Display configuration):
 - **MOSI**: GPIO 19 (TTGO T-Display), GPIO 23 (generic ESP32)
 - **SCLK**: GPIO 18 (TTGO T-Display), GPIO 18 (generic ESP32)
 - **CS**: GPIO 5 (TTGO T-Display), GPIO -1 (disabled for generic)
@@ -73,10 +94,11 @@ endchoice
 - **BL (Backlight)**: GPIO 4 (TTGO T-Display), GPIO 32 (generic ESP32)
 
 **Rationale**:
-- These pins successfully tested on reference hardware
+- These pins successfully tested on TTGO T-Display hardware in nopnop2002 examples
 - Avoid GPIO 0, 2, 12, 15 conflicts (strapping pins)
 - Per-chip defaults match silicon capabilities (input-only pins on ESP32: 34-39)
 - Menuconfig allows override for custom hardware
+- Configuration lives in project Kconfig (esp-idf/components/st7789_config/), not in managed component
 
 **Alternatives considered**:
 - **Hardcoded pins**: Rejected. Inflexible for custom boards.
@@ -89,14 +111,15 @@ endchoice
 
 **Question**: How should ST7789 integrate with the existing Adafruit_GFX-based rendering layer used by BotiEyes?
 
-**Decision**: Create `ESP_ST7789` class parallel to existing `ESP_SSD1306` class, both implementing Adafruit_GFX interface.
+**Decision**: Create `ESP_ST7789` class parallel to existing `ESP_SSD1306` class, both implementing Adafruit_GFX interface. Wrap nopnop2002/st7789 native C driver functions.
 
 **Rationale**:
 - BotiEyes rendering logic already uses `Adafruit_GFX` interface (display-agnostic)
-- SSD1306 adapter exists at `esp-idf/components/display/include/esp_ssd1306.h`
-- ST7789 adapter will follow same pattern: inherit `Adafruit_GFX`, wrap native driver
+- SSD1306 adapter exists at `esp-idf/components/display/include/esp_ssd1306.h` wrapping nopnop2002 SSD1306 driver
+- ST7789 adapter will follow same pattern: inherit `Adafruit_GFX`, wrap nopnop2002 ST7789 native driver
 - `display_init.cpp` already implements `initializeDisplay()` factory pattern
 - Zero changes required in BotiEyes core library (fully abstracted)
+- nopnop2002 component provides C API: `spi_master_init()`, `lcdInit()`, `lcdDrawPixel()`, `lcdDrawMultiPixels()`, `lcdFillScreen()`
 
 **Class structure**:
 ```cpp

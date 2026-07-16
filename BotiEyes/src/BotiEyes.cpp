@@ -137,6 +137,9 @@ namespace BotiEyes
         case DISPLAY_SSD1306_64x48:
             validDimensions = (config.width == 64 && config.height == 48);
             break;
+        case DISPLAY_ST7789_240x135:
+            validDimensions = (config.width == 240 && config.height == 135);
+            break;
         }
 
         if (!validDimensions)
@@ -686,9 +689,16 @@ namespace BotiEyes
         // 6. Clear and draw
         display->fillScreen(0);
 
+        // Eye color: Use bright cyan (0x07FF) for color displays, white (1) for OLED
+        // RGB565: 0x07FF = 00000 111111 11111 = cyan (max green + max blue)
+        uint16_t eyeColor = 1; // Default for monochrome OLED
+#ifdef CONFIG_DISPLAY_TYPE_ST7789_SPI
+        eyeColor = 0x07FF; // Bright cyan for ST7789 color TFT
+#endif
+
         // Filled eye ellipses (pupils-free shape design)
-        RenderingHelpers::fillEllipse(display, leftX + gazeXLeft, eyeY, lW, lH, 1);
-        RenderingHelpers::fillEllipse(display, rightX + gazeXRight, eyeY, rW, rH, 1);
+        RenderingHelpers::fillEllipse(display, leftX + gazeXLeft, eyeY, lW, lH, eyeColor);
+        RenderingHelpers::fillEllipse(display, rightX + gazeXRight, eyeY, rW, rH, eyeColor);
 
         // Eyelid overlays drawn in background color (0) to carve shape
         if (params.lidTopCoverage > 0.0f)

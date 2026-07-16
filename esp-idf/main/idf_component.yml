@@ -1,6 +1,9 @@
 dependencies:
   espressif/led_strip: '*'
   fasani/adafruit_gfx: '*'
-  nopnop2002/ssd1306:
-    path: ../../../esp-idf-ssd1306/components/ssd1306
-    version: '*'
+  # nopnop2002/ssd1306:  # Conflicts with st7789 (both define same SPI functions)
+  #   path: ../../../esp-idf-ssd1306/components/ssd1306
+  #   version: '*'
+  nopnop2002/st7789:
+    git: https://github.com/nopnop2002/esp-idf-st7789.git
+    path: components/st7789

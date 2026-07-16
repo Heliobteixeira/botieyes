@@ -198,12 +198,98 @@ Features:
 The BotiEyes firmware has been refactored to follow industrial ESP-IDF patterns:
 - **Modular component architecture**: Independent, reusable components with clear interfaces
 - **Event-driven inter-task communication**: ESP event loops and FreeRTOS queues for non-blocking coordination
-- **Hardware abstraction layer**: Multi-board support (TTGO LoRa32, ESP32-S3) with compile-time selection
+- **Hardware abstraction layer**: Multi-board support (TTGO LoRa32, ESP32-S3, TTGO T-Display) with compile-time selection
 - **Comprehensive health monitoring**: Watchdog protection, crash recovery, and boot loop detection
 
 See [`esp-idf/README.md`](../esp-idf/README.md) and 
 [`specs/004-industrial-firmware-architecture/quickstart.md`](../specs/004-industrial-firmware-architecture/quickstart.md) 
 for developer documentation.
+
+## Supported Hardware (ESP-IDF Firmware)
+
+The ESP-IDF firmware supports multiple display types and development boards through build-time configuration:
+
+### TTGO LoRa32 (ESP32 + SSD1306 OLED)
+
+**Display**: Monochrome OLED 128×64 pixels (I2C)  
+**Controller**: SSD1306  
+**Pins**: SDA=GPIO4, SCL=GPIO15, RST=GPIO16  
+**Status**: ✅ Production-ready (default configuration)
+
+```bash
+# Configuration
+idf.py menuconfig
+# Select: Display Type → SSD1306 I2C
+# Default GPIO pins are pre-configured for TTGO LoRa32
+```
+
+**Features**:
+- Integrated OLED (no wiring required)
+- Low power consumption
+- Built-in LoRa radio (optional use)
+- Compact form factor
+
+### TTGO T-Display (ESP32 + ST7789 TFT)
+
+**Display**: RGB565 Color TFT 240×135 pixels (SPI)  
+**Controller**: ST7789  
+**Pins**: MOSI=GPIO19, SCLK=GPIO18, CS=GPIO5, DC=GPIO16, RST=GPIO23, BL=GPIO4  
+**Status**: ✅ Production-ready (Feature 005)
+
+```bash
+# Configuration
+idf.py menuconfig
+# Select: Display Type → ST7789 SPI
+# Default GPIO pins are pre-configured for TTGO T-Display
+```
+
+**Features**:
+- Vibrant RGB color display (65K colors)
+- Higher resolution (240×135 vs 128×64)
+- Fast SPI interface (up to 80 MHz)
+- Integrated display with backlight control
+- Larger viewing area
+
+**Quickstart**: See [`specs/005-st7789-display-support/quickstart.md`](../specs/005-st7789-display-support/quickstart.md) for complete setup guide.
+
+### Generic ESP32 Boards
+
+**Supported Displays**:
+- SSD1306 I2C (128×64, 128×32)
+- SSD1306 SPI (128×64)
+- ST7789 SPI (240×135, 240×240, 240×320)
+
+```bash
+# Configuration
+idf.py menuconfig
+# 1. Select display type (SSD1306 I2C/SPI or ST7789 SPI)
+# 2. Configure GPIO pins to match your wiring
+# 3. Adjust display dimensions if needed
+```
+
+**GPIO Requirements**:
+- **I2C**: 2 pins (SDA, SCL) + optional RST
+- **SPI (SSD1306)**: 5 pins (MOSI, SCLK, DC, RST, optional CS)
+- **SPI (ST7789)**: 6 pins (MOSI, SCLK, DC, RST, optional CS, optional BL)
+
+**Wiring Guide**: See respective quickstart guides in `specs/` directory.
+
+### Display Comparison
+
+| Feature | TTGO LoRa32 (SSD1306) | TTGO T-Display (ST7789) |
+|---------|------------------------|--------------------------|
+| **Resolution** | 128×64 | 240×135 |
+| **Colors** | Monochrome (white) | RGB565 (65K colors) |
+| **Interface** | I2C (400 kHz) | SPI (20-80 MHz) |
+| **Frame Rate** | 15-20 FPS | 25-40 FPS |
+| **Wiring** | 2 pins (integrated) | 6 pins (integrated) |
+| **Power** | Very low | Moderate (backlight) |
+| **Best For** | Battery-powered robots | Vivid emotional displays |
+
+**Recommendation**:
+- **Prototyping / Low Power**: TTGO LoRa32 (SSD1306)
+- **Production / Visual Impact**: TTGO T-Display (ST7789)
+- **Custom Projects**: Generic ESP32 + your choice of display
 
 ## API Reference
 

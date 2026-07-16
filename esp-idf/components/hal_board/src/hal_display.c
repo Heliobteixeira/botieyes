@@ -4,6 +4,10 @@
  * 
  * Provides unified display API that selects I2C or SPI implementation
  * based on Kconfig at compile time.
+ * 
+ * NOTE: This HAL layer is currently incomplete. The display component
+ * (components/display) provides the working implementation via
+ * display_init.cpp which uses CONFIG_DISPLAY_TYPE_* Kconfig settings.
  */
 
 #include "hal_display.h"
@@ -18,17 +22,18 @@ static SemaphoreHandle_t g_display_mutex = NULL;
 static hal_display_handle_t g_display_handle = NULL;
 
 // Forward declarations for protocol-specific implementations
-#ifdef CONFIG_BOTIEYES_OLED_PROTOCOL_I2C
+// TODO: Implement these functions when HAL layer is completed
+#if defined(CONFIG_DISPLAY_TYPE_SSD1306_I2C)
 extern hal_display_handle_t hal_display_i2c_init(void);
 #endif
 
-#ifdef CONFIG_BOTIEYES_OLED_PROTOCOL_SPI
+#if defined(CONFIG_DISPLAY_TYPE_SSD1306_SPI) || defined(CONFIG_DISPLAY_TYPE_ST7789_SPI)
 extern hal_display_handle_t hal_display_spi_init(void);
 #endif
 
 hal_display_handle_t hal_display_init(void)
 {
-    ESP_LOGI(TAG, "Initializing display abstraction layer");
+    ESP_LOGI(TAG, "Initializing display abstraction layer (HAL stub)");
     
     // Create display mutex (FR-014)
     g_display_mutex = xSemaphoreCreateMutex();
@@ -37,31 +42,34 @@ hal_display_handle_t hal_display_init(void)
         return NULL;
     }
     
-    // Select protocol-specific initialization based on Kconfig (FR-050)
-#ifdef CONFIG_BOTIEYES_OLED_PROTOCOL_I2C
-    ESP_LOGI(TAG, "Using I2C display protocol");
-    g_display_handle = hal_display_i2c_init();
-#elif defined(CONFIG_BOTIEYES_OLED_PROTOCOL_SPI)
-    ESP_LOGI(TAG, "Using SPI display protocol");
-    g_display_handle = hal_display_spi_init();
+    // Select protocol-specific initialization based on new CONFIG_DISPLAY_TYPE_* settings
+#if defined(CONFIG_DISPLAY_TYPE_ST7789_SPI)
+    ESP_LOGI(TAG, "Display type: ST7789 SPI (HAL layer incomplete, use display component)");
+    // g_display_handle = hal_display_spi_init();  // TODO: Implement
+    g_display_handle = (hal_display_handle_t)1;  // Stub handle
+    
+#elif defined(CONFIG_DISPLAY_TYPE_SSD1306_SPI)
+    ESP_LOGI(TAG, "Display type: SSD1306 SPI (HAL layer incomplete, use display component)");
+    // g_display_handle = hal_display_spi_init();  // TODO: Implement
+    g_display_handle = (hal_display_handle_t)1;  // Stub handle
+    
+#elif defined(CONFIG_DISPLAY_TYPE_SSD1306_I2C)
+    ESP_LOGI(TAG, "Display type: SSD1306 I2C (HAL layer incomplete, use display component)");
+    // g_display_handle = hal_display_i2c_init();  // TODO: Implement
+    g_display_handle = (hal_display_handle_t)1;  // Stub handle
+    
 #else
-    #error "No display protocol selected in Kconfig"
+    #error "No display type selected in Kconfig. Run 'idf.py menuconfig' → Display Type Selection"
 #endif
 
     if (g_display_handle == NULL) {
-        ESP_LOGE(TAG, "Display initialization failed (protocol=%s)",
-#ifdef CONFIG_BOTIEYES_OLED_PROTOCOL_I2C
-                 "I2C"
-#else
-                 "SPI"
-#endif
-                 );
+        ESP_LOGE(TAG, "Display initialization failed");
         vSemaphoreDelete(g_display_mutex);
         g_display_mutex = NULL;
         return NULL;
     }
     
-    ESP_LOGI(TAG, "Display initialized successfully");
+    ESP_LOGI(TAG, "Display HAL initialized (stub mode - actual display via components/display)");
     return g_display_handle;
 }
 

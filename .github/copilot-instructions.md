@@ -6,6 +6,7 @@ Auto-generated from all feature plans. Last updated: 2026-04-17
 
 - C++ (Arduino 1.8+/PlatformIO) for embedded library; Python 3.8+ for PC emulator + Adafruit GFX (embedded rendering only); Pygame (emulator only) (001-emotion-driven-eyes)
 - C++ (Arduino/PlatformIO, ESP32 core) network control layer + Python 3.8+ reference controller client + ESP32 Wi-Fi (WiFi/WiFiUDP); stdlib socket (controller) (002-esp32-network-service)
+- C (ESP-IDF v6.0+) for firmware components + nopnop2002/st7789 (managed component, GitHub); nopnop2002/esp-idf-ssd1306 (local path component); Adafruit_GFX (managed component, polymorphic display abstraction) (005-st7789-display-support)
 
 ## Project Structure
 
@@ -24,6 +25,7 @@ C++ (Arduino 1.8+/PlatformIO) for embedded library; Python 3.8+ for PC emulator:
 
 ## Recent Changes
 
+- 005-st7789-display-support: Added ST7789 SPI color display driver support (240×135 RGB565 TFT) via nopnop2002/st7789 managed component; polymorphic display abstraction using Adafruit_GFX base class; build-time display type selection via Kconfig (SSD1306_I2C/SSD1306_SPI/ST7789_SPI); optional frame buffer mode (65KB); error handling for SPI init and memory allocation; GPIO conflict validation
 - 002-esp32-network-service: Added ESP32 UDP network control service (best-effort streaming + acks/heartbeats, single-controller lock, 5 s timeout) layered on the existing BotiEyes API
 - 001-emotion-driven-eyes: Added C++ (Arduino 1.8+/PlatformIO) for embedded library; Python 3.8+ for PC emulator + Adafruit GFX (embedded rendering only); Pygame (emulator only)
 
@@ -144,8 +146,67 @@ Before accepting AI-generated ESP-IDF code, verify:
 - [ ] No busy-waiting or polling (except hardware registers)?
 - [ ] Direct calls used within component when no sync needed?
 
+### Display Drivers (Feature 005)
+```cpp
+// ✅ CORRECT: Polymorphic display via Adafruit_GFX
+Adafruit_GFX* display = display_init();  // Returns ESP_SSD1306* or ESP_ST7789*
+display->drawPixel(x, y, color);         // Virtual dispatch
+display->flush();                        // DisplayFlushable interface
+
+// Build-time selection via Kconfig
+#ifdef CONFIG_DISPLAY_TYPE_ST7789_SPI
+    return new ESP_ST7789(width, height);
+#elif CONFIG_DISPLAY_TYPE_SSD1306_I2C
+    return new ESP_SSD1306_I2C(width, height);
+#endif
+
+// Error handling in display init
+bool ESP_ST7789::beginSpi(...) {
+    if (!validate_gpio_pins()) return false;
+    spi_master_init(&_dev, ...);
+    if (_dev._SPIHandle == NULL) {
+        ESP_LOGE(TAG, "SPI init failed");
+        return false;
+    }
+    return true;
+}
+
+// Frame buffer allocation with fallback
+#ifdef CONFIG_ST7789_FRAME_BUFFER
+    _frame_buffer = new (std::nothrow) uint16_t[buffer_size];
+    if (!_frame_buffer) {
+        ESP_LOGE(TAG, "Frame buffer alloc failed, using direct rendering");
+        _use_frame_buffer = false;  // Graceful degradation
+    }
+#endif
+
+// ❌ WRONG: Driver-specific code in application
+#include "esp_st7789.h"  // Don't include driver in app code
+ESP_ST7789* display = new ESP_ST7789(240, 135);  // Use display_init() factory
+
+// ❌ WRONG: Missing error checks
+spi_master_init(&_dev, ...);
+// Always check _dev._SPIHandle != NULL after init
+
+// ❌ WRONG: Allocation without nothrow
+_buffer = new uint16_t[size];  // May throw exception on ESP-IDF
+// Use: new (std::nothrow) uint16_t[size]
+```
+
+**Display Driver Checklist**:
+- [ ] Inherits from Adafruit_GFX base class?
+- [ ] Implements DisplayFlushable interface?
+- [ ] Uses managed components (nopnop2002/*) not custom drivers?
+- [ ] Validates GPIO pins before hardware init?
+- [ ] Checks SPI/I2C handle after initialization?
+- [ ] Frame buffer allocation uses std::nothrow?
+- [ ] Graceful fallback if frame buffer fails (direct rendering)?
+- [ ] Kconfig has GPIO conflict warnings?
+- [ ] Application code uses polymorphic display pointer?
+- [ ] Compile-time assertions verify class hierarchy?
+
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-specs/004-industrial-firmware-architecture/plan.md
+specs/005-st7789-display-support/plan.md
 <!-- SPECKIT END -->

@@ -1,6 +1,6 @@
 # BotiEyes
 
-Emotion-driven eye animation library for Arduino/ESP32 OLEDs + PC emulator.
+Emotion-driven eye animation library for Arduino/ESP32 OLED and TFT displays.
 
 ---
 
@@ -8,14 +8,14 @@ Emotion-driven eye animation library for Arduino/ESP32 OLEDs + PC emulator.
 
 BotiEyes solves the problem of making robot eyes look alive. Instead of hand-animating frames, you describe an emotional state (valence + arousal) and the library continuously interpolates eye shape, brow position, and expression geometry to match.
 
-There are two independent ways to use it:
+There are two ways to use it:
 
 | Mode | What you need | When to use |
 |------|--------------|-------------|
 | **Arduino library** | Any Arduino-compatible board + supported display | Embedded deployment — wire up a display, `#include <BotiEyes.h>`, call `eyes.happy(1.0)` |
-| **PC emulator** | Python + `pygame-ce` | Rapid development and visual iteration without hardware |
+| **ESP-IDF firmware** | TENSTAR TS-ESP32-S3 + ST7789 TFT | Production firmware with Wi-Fi network control |
 
-On ESP32, a third path adds a **UDP network control service** so a host program can drive the eyes in real time over Wi-Fi. The `esp-idf/` folder contains a production-grade ESP-IDF v6.0.1 firmware build targeting the TENSTAR TS-ESP32-S3 board.
+On ESP32, the library also provides a **UDP network control service** so a host program can drive the eyes in real time over Wi-Fi. The `esp-idf/` folder contains a production-grade ESP-IDF v6.0.1 firmware build targeting the TENSTAR TS-ESP32-S3 board.
 
 ---
 
@@ -35,7 +35,6 @@ On ESP32, a third path adds a **UDP network control service** so a host program 
 - **UDP network control** — `BotiEyesServer` (ESP32) + Python `BotiEyesClient` reference implementation; single-controller lock, heartbeat, 5 s timeout
 - **WS2812 status LED** (ESP-IDF firmware)
 - **Memory-efficient** — ~1.04 KB RAM on Arduino Nano; static allocation throughout
-- **PC emulator** — Pygame window with sliders and emotion preset buttons for development without hardware
 
 ---
 
@@ -49,12 +48,6 @@ BotiEyes/           Arduino library (install via Library Manager or copy to libr
 controller/         Python 3 UDP reference controller
   botieyes_client.py   BotiEyesClient class (stdlib only, no pip deps)
   cli.py               Interactive CLI for driving a live device
-
-emulator/           PC emulator (Pygame)
-  botieyes_emulator.py  Main entry point — run this
-  eye_renderer.py       Pixel rendering logic (mirrors the embedded renderer)
-  emotion_mapper.py     Valence-arousal → geometry mapping
-  ui_controls.py        Slider and button control panel
 
 esp-idf/            ESP-IDF v6.0.1 firmware (TENSTAR TS-ESP32-S3 + ST7789 TFT)
   main/             Application entry point, task architecture, display init
@@ -113,23 +106,7 @@ The library itself is portable to any Arduino-compatible platform with an Adafru
 
 ## Getting Started
 
-### Path A — PC Emulator
-
-No hardware required. The emulator renders a 128×64 pixel OLED window (scaled 8×) with a control panel.
-
-**Requirements:** Python 3.8+, `pygame-ce >= 2.5.0`
-
-```bash
-cd emulator
-pip install -r requirements.txt
-python botieyes_emulator.py
-```
-
-The emulator starts in **AUTO** mode, cycling all 12 emotion presets with smooth transitions. Drag the valence/arousal sliders or click an emotion button to switch to **MANUAL** mode. Press **Space** to return to AUTO.
-
----
-
-### Path B — Arduino Library (TTGO LoRa32 / any ESP32 + SSD1306)
+### Path A — Arduino Library (TTGO LoRa32 / any ESP32 + SSD1306)
 
 **Dependencies (install via Arduino Library Manager):**
 - Adafruit GFX Library
@@ -143,7 +120,7 @@ The emulator starts in **AUTO** mode, cycling all 12 emotion presets with smooth
 
 ---
 
-### Path C — ESP-IDF Firmware (TENSTAR TS-ESP32-S3)
+### Path B — ESP-IDF Firmware (TENSTAR TS-ESP32-S3)
 
 **Toolchain:** ESP-IDF v6.0.1
 

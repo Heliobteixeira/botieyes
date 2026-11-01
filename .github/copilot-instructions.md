@@ -4,7 +4,7 @@ Auto-generated from all feature plans. Last updated: 2026-04-17
 
 ## Active Technologies
 
-- C++ (Arduino 1.8+/PlatformIO) for embedded library; Python 3.8+ for PC emulator + Adafruit GFX (embedded rendering only); Pygame (emulator only) (001-emotion-driven-eyes)
+- C++ (Arduino 1.8+/PlatformIO) for embedded library + Adafruit GFX (001-emotion-driven-eyes)
 - C++ (Arduino/PlatformIO, ESP32 core) network control layer + Python 3.8+ reference controller client + ESP32 Wi-Fi (WiFi/WiFiUDP); stdlib socket (controller) (002-esp32-network-service)
 - C (ESP-IDF v6.0+) for firmware components + nopnop2002/st7789 (managed component, GitHub); nopnop2002/esp-idf-ssd1306 (local path component); Adafruit_GFX (managed component, polymorphic display abstraction) (005-st7789-display-support)
 
@@ -21,7 +21,7 @@ cd src; pytest; ruff check .
 
 ## Code Style
 
-C++ (Arduino 1.8+/PlatformIO) for embedded library; Python 3.8+ for PC emulator: Follow standard conventions
+C++ (Arduino 1.8+/PlatformIO) for embedded library; Python 3.8+ for the UDP controller: Follow standard conventions
 
 ## Recent Changes
 
@@ -39,9 +39,6 @@ that affects rendering, timing, I2C, display init, or the public API:
 1. Build and upload the relevant example sketch to the TTGO LoRa32 board.
 2. Visually verify the behavior on the OLED.
 3. Only then run `git add` + `git commit`.
-
-Python emulator changes (`emulator/**`) can be validated by running the
-emulator alone.
 
 ### Hardware reference
 

@@ -405,7 +405,6 @@ botieyes/
 │   ├── managed_components/      # External deps (gitignored)
 │   └── sdkconfig.defaults       # Default configuration
 ├── controller/                  # Python UDP client
-├── emulator/                    # Python/Pygame desktop emulator
 ├── specs/                       # Feature specifications
 └── docs/                        # Architecture documentation
 ```
@@ -509,16 +508,6 @@ Before committing changes to embedded code (`BotiEyes/src/**`, `esp-idf/**`):
    - ✓ No TWDT timeouts or task crashes
 4. **Visual verification**: Eyes render correctly on OLED
 5. **Network testing**: Controller can send commands via UDP
-
-### Python Emulator Testing
-
-```bash
-cd emulator/
-pip install -r requirements.txt
-python botieyes_emulator.py
-```
-
-Use for rapid iteration on eye rendering logic without hardware.
 
 ---
 

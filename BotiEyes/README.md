@@ -16,7 +16,7 @@ BotiEyes enables continuous emotional expression using a valence-arousal model w
 - **Smooth Transitions**: Configurable interpolation with ease-in-out-cubic easing
 - **Memory Efficient**: ~1.04KB RAM footprint on Arduino Nano (52% library, 48% user code available)
 - **Minimal Dependencies**: Adafruit GFX only
-- **Cross-Platform**: Arduino Nano/Mega/ESP32 + PC emulator for development
+- **Cross-Platform**: Arduino Nano/Mega/ESP32
 - **Built-in Animations**: Blink, wink, idle behaviors
 
 ## Quick Start
@@ -177,22 +177,6 @@ cd controller/ && python test_client.py   # Python framing tests
 
 **Note**: Arduino Nano users should carefully manage user code to stay within ~1000 byte budget. Consider 128x32 displays for more headroom (~1500 bytes).
 
-## PC Emulator
-
-For AI-driven development and visual testing:
-
-```bash
-cd emulator/
-pip install -r requirements.txt
-python botieyes_emulator.py
-```
-
-Features:
-- Real-time emotion/position sliders
-- PNG frame capture for multimodal AI feedback
-- JSON state export for debugging
-- Matches embedded rendering exactly
-
 ## ESP-IDF Firmware Architecture
 
 The BotiEyes firmware has been refactored to follow industrial ESP-IDF patterns:
@@ -300,7 +284,6 @@ See [`docs/API.md`](docs/API.md) for complete API documentation.
 - **Arduino Nano**: 15-20 FPS (target: 18-20ms render + 15ms I2C)
 - **Arduino Mega**: 20-25 FPS
 - **ESP32**: 30-60 FPS
-- **PC Emulator**: 60+ FPS
 
 ## License
 

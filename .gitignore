@@ -75,10 +75,6 @@ docs/_build/
 Thumbs.db
 desktop.ini
 
-# Emulator frame captures (User Story 2)
-emulator/captures/
-captures/
-
 # ESP-IDF Build System
 esp-idf/build/
 esp-idf/sdkconfig
